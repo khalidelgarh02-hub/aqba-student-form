@@ -464,6 +464,253 @@ $('studentForm').addEventListener('submit', async e=>{
 function loadSaved(){const d=JSON.parse(localStorage.getItem(STORAGE)||'null');if(!d){alert('لا توجد بيانات محفوظة.');return}apply(d);$('status').textContent='تم استرجاع آخر بيانات محفوظة.'}
 
 async function makePDF(){
+  const form = document.getElementById('studentForm');
+
+  // التحقق من الاستمارة
+  if(!form.checkValidity()){
+    form.reportValidity();
+    return;
+  }
+
+  // التحقق من توقيع التلميذ
+  if(typeof signatureEmpty === 'function' && signatureEmpty('studentSig')){
+    alert('المرجو توقيع التلميذ يدوياً قبل إنشاء الوثيقة.');
+    return;
+  }
+
+  // التأكد من توفر مكتبة PDF
+  if(typeof html2pdf === 'undefined'){
+    alert('خدمة PDF غير متاحة. تحقق من الاتصال بالإنترنت ثم أعد المحاولة.');
+    return;
+  }
+
+  const buttons = [...form.querySelectorAll('button')];
+  buttons.forEach(b => b.disabled = true);
+
+  // إنشاء نسخة خاصة بالـPDF
+  const render = document.createElement('div');
+
+  Object.assign(render.style,{
+    position:'absolute',
+    left:'0',
+    top:'0',
+    width:'210mm',
+    minHeight:'297mm',
+    background:'#ffffff',
+    padding:'8mm',
+    boxSizing:'border-box',
+    fontFamily:'Tahoma, Arial, sans-serif',
+    color:'#111111',
+    direction:'rtl',
+    zIndex:'999999',
+    overflow:'visible'
+  });
+
+  // نسخ الاستمارة
+  const clone = form.cloneNode(true);
+
+  clone.id = 'studentFormPDF';
+
+  Object.assign(clone.style,{
+    display:'block',
+    width:'194mm',
+    margin:'0 auto',
+    padding:'0',
+    background:'#fff',
+    boxShadow:'none'
+  });
+
+  // --------------------------------------------------
+  // نسخ القيم الحقيقية من الاستمارة الأصلية إلى النسخة
+  // --------------------------------------------------
+
+  const originalInputs = form.querySelectorAll('input, select, textarea');
+  const cloneInputs = clone.querySelectorAll('input, select, textarea');
+
+  originalInputs.forEach((original, i) => {
+    const copy = cloneInputs[i];
+    if(!copy) return;
+
+    if(original.type === 'checkbox' || original.type === 'radio'){
+      copy.checked = original.checked;
+
+      if(original.checked){
+        copy.setAttribute('checked','checked');
+      }else{
+        copy.removeAttribute('checked');
+      }
+    }
+    else{
+      copy.value = original.value;
+      copy.setAttribute('value', original.value);
+    }
+
+    if(original.tagName === 'TEXTAREA'){
+      copy.textContent = original.value;
+    }
+
+    if(original.tagName === 'SELECT'){
+      [...copy.options].forEach((option, j) => {
+        option.selected = original.options[j]?.selected || false;
+
+        if(option.selected){
+          option.setAttribute('selected','selected');
+        }else{
+          option.removeAttribute('selected');
+        }
+      });
+    }
+  });
+
+  // --------------------------------------------------
+  // تحويل التوقيعات الموجودة في Canvas إلى صور
+  // --------------------------------------------------
+
+  const originalCanvases = form.querySelectorAll('canvas');
+  const cloneCanvases = clone.querySelectorAll('canvas');
+
+  originalCanvases.forEach((canvas, i) => {
+    const targetCanvas = cloneCanvases[i];
+
+    if(!targetCanvas) return;
+
+    try{
+      const img = document.createElement('img');
+
+      img.src = canvas.toDataURL('image/png');
+
+      img.style.width = canvas.clientWidth + 'px';
+      img.style.height = canvas.clientHeight + 'px';
+      img.style.display = 'block';
+      img.style.objectFit = 'contain';
+
+      targetCanvas.parentNode.replaceChild(img, targetCanvas);
+    }catch(e){
+      console.warn('تعذر نسخ التوقيع:', e);
+    }
+  });
+
+  // --------------------------------------------------
+  // تنسيق خاص للطباعة
+  // --------------------------------------------------
+
+  const css = document.createElement('style');
+
+  css.textContent = `
+    *{
+      box-sizing:border-box !important;
+    }
+
+    body{
+      background:#fff !important;
+    }
+
+    #studentFormPDF{
+      background:#fff !important;
+      color:#111 !important;
+      direction:rtl !important;
+    }
+
+    #studentFormPDF input,
+    #studentFormPDF select,
+    #studentFormPDF textarea{
+      color:#111 !important;
+      background:#fff !important;
+      border:1px solid #777 !important;
+      font-family:Tahoma,Arial,sans-serif !important;
+    }
+
+    #studentFormPDF textarea{
+      white-space:pre-wrap !important;
+    }
+
+    #studentFormPDF button{
+      display:none !important;
+    }
+
+    #studentFormPDF canvas{
+      display:none !important;
+    }
+
+    #studentFormPDF img{
+      max-width:100% !important;
+    }
+
+    .page-break{
+      page-break-before:always !important;
+      break-before:page !important;
+    }
+
+    .avoid-break{
+      page-break-inside:avoid !important;
+      break-inside:avoid !important;
+    }
+  `;
+
+  clone.prepend(css);
+  render.appendChild(clone);
+  document.body.appendChild(render);
+
+  try{
+
+    // إعطاء المتصفح وقتاً لإظهار النسخة قبل التصوير
+    await new Promise(resolve => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(resolve);
+      });
+    });
+
+    await html2pdf()
+      .set({
+        margin:[5,5,5,5],
+
+        filename:'استمارة_التلميذ_عقبة_بن_نافع_2026-2027.pdf',
+
+        image:{
+          type:'jpeg',
+          quality:0.98
+        },
+
+        html2canvas:{
+          scale:2,
+          useCORS:true,
+          allowTaint:true,
+          backgroundColor:'#ffffff',
+          logging:false,
+          scrollX:0,
+          scrollY:0
+        },
+
+        jsPDF:{
+          unit:'mm',
+          format:'a4',
+          orientation:'portrait'
+        },
+
+        pagebreak:{
+          mode:['css','legacy']
+        }
+
+      })
+      .from(render)
+      .save();
+
+  }catch(err){
+
+    console.error(err);
+
+    alert(
+      'تعذر إنشاء ملف PDF. حاول مرة أخرى.\n\n' +
+      (err?.message || 'خطأ غير معروف')
+    );
+
+  }finally{
+
+    render.remove();
+
+    buttons.forEach(b => b.disabled = false);
+  }
+}
   const form=$('studentForm');
   if(!form.checkValidity()){form.reportValidity();return}
   if(signatureEmpty('studentSig')){alert('المرجو توقيع التلميذ يدوياً قبل إنشاء الوثيقة.');return}
