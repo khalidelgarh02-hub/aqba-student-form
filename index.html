@@ -49,6 +49,14 @@ button{border:0;border-radius:10px;padding:12px 18px;font-size:15px;font-weight:
  .container{padding:8px}.card{padding:15px}.logos{grid-template-columns:1fr 1fr}.logos .center-logo{grid-column:1/-1;grid-row:1}.logo{height:70px}.grid,.grid3,.signature-area,.teacher-grid{grid-template-columns:1fr}.title h1{font-size:22px}.title h2{font-size:17px}
 }
 
+
+/* تحسينات الواجهة */
+.card{border:1px solid #e3e8ec}
+.field{min-width:0}
+input:focus,select:focus,textarea:focus{outline:2px solid #b9d9ec;outline-offset:1px;border-color:#1976b9}
+button:disabled{opacity:.55;cursor:wait}
+@media(max-width:760px){.photo-wrap{flex-direction:column}.photo-box{width:120px;height:145px;margin:auto}.actions button{width:100%}}
+
 @page{size:A4 portrait;margin:8mm}
 @media print{
   html,body{width:210mm;min-height:297mm;background:#fff}
@@ -236,7 +244,8 @@ async function sendStudentToDatabase(d) {
 </select>
 </div>
     </div>
-    <div style="margin-top:10px"><label class="field"><span style="font-weight:700">الصورة</span><input id="photo" type="file" accept="image/*"></label></div>
+    <div style="margin-top:10px"><label class="field"><span style="font-weight:700">الصورة</span><input id="photo" type="file" accept="image/*">
+    <div class="note">يفضل صورة واضحة بصيغة JPG أو PNG.</div></label></div>
   </div>
 </div>
 
@@ -348,6 +357,7 @@ async function sendStudentToDatabase(d) {
 <div class="actions" style="margin-top:22px">
   <button class="primary" type="submit">حفظ الاستمارة</button>
   <button class="secondary" type="button" onclick="makePDF()">📄 الحصول على الوثيقة PDF</button>
+  <button class="light" type="button" onclick="printPDF()">🖨️ طباعة / حفظ PDF</button>
   <button class="light" type="button" onclick="exportData()">تصدير بيانات الاستمارة</button>
   <button class="danger" type="button" onclick="resetForm()">مسح البيانات</button>
 </div>
@@ -464,312 +474,363 @@ $('studentForm').addEventListener('submit', async e=>{
 function loadSaved(){const d=JSON.parse(localStorage.getItem(STORAGE)||'null');if(!d){alert('لا توجد بيانات محفوظة.');return}apply(d);$('status').textContent='تم استرجاع آخر بيانات محفوظة.'}
 
 async function makePDF(){
-  const form = document.getElementById('studentForm');
+  const form = $('studentForm');
+  const header = document.querySelector('.header');
 
-  // التحقق من الاستمارة
   if(!form.checkValidity()){
     form.reportValidity();
     return;
   }
 
-  // التحقق من توقيع التلميذ
-  if(typeof signatureEmpty === 'function' && signatureEmpty('studentSig')){
+  if(signatureEmpty('studentSig')){
     alert('المرجو توقيع التلميذ يدوياً قبل إنشاء الوثيقة.');
     return;
   }
 
-  // التأكد من توفر مكتبة PDF
   if(typeof html2pdf === 'undefined'){
-    alert('خدمة PDF غير متاحة. تحقق من الاتصال بالإنترنت ثم أعد المحاولة.');
+    alert('خدمة PDF غير متاحة حالياً. تحقق من اتصال الإنترنت ثم أعد المحاولة.');
     return;
   }
 
   const buttons = [...form.querySelectorAll('button')];
   buttons.forEach(b => b.disabled = true);
 
-  // إنشاء نسخة خاصة بالـPDF
-  const render = document.createElement('div');
+  // نُنشئ نسخة كاملة من الواجهة الرسمية: الشعارات + الموسم + المؤسسة + الاستمارة.
+  const holder = document.createElement('div');
+  holder.id = 'aqbaPdfHolder';
+  holder.dir = 'rtl';
 
-  Object.assign(render.style,{
-    position:'absolute',
-    left:'0',
+  Object.assign(holder.style,{
+    position:'fixed',
+    left:'-10000px',
     top:'0',
     width:'210mm',
-    minHeight:'297mm',
-    background:'#ffffff',
-    padding:'8mm',
+    background:'#fff',
+    padding:'7mm',
     boxSizing:'border-box',
-    fontFamily:'Tahoma, Arial, sans-serif',
-    color:'#111111',
-    direction:'rtl',
+    opacity:'1',
+    visibility:'visible',
     zIndex:'999999',
+    pointerEvents:'none',
     overflow:'visible'
   });
 
-  // نسخ الاستمارة
+  // ===== نسخ الواجهة التي تحتوي على الشعارات =====
+  if(header){
+    const headerClone = header.cloneNode(true);
+    headerClone.id = 'studentPdfHeader';
+    holder.appendChild(headerClone);
+  }
+
+  // ===== نسخ الاستمارة =====
   const clone = form.cloneNode(true);
-
   clone.id = 'studentFormPDF';
+  holder.appendChild(clone);
 
-  Object.assign(clone.style,{
-    display:'block',
-    width:'194mm',
-    margin:'0 auto',
-    padding:'0',
-    background:'#fff',
-    boxShadow:'none'
-  });
+  // نسخ القيم الحالية فعلياً.
+  const originals = form.querySelectorAll('input,select,textarea');
+  const copies = clone.querySelectorAll('input,select,textarea');
 
-  // --------------------------------------------------
-  // نسخ القيم الحقيقية من الاستمارة الأصلية إلى النسخة
-  // --------------------------------------------------
+  originals.forEach((src,i)=>{
+    const dst = copies[i];
+    if(!dst) return;
 
-  const originalInputs = form.querySelectorAll('input, select, textarea');
-  const cloneInputs = clone.querySelectorAll('input, select, textarea');
-
-  originalInputs.forEach((original, i) => {
-    const copy = cloneInputs[i];
-    if(!copy) return;
-
-    if(original.type === 'checkbox' || original.type === 'radio'){
-      copy.checked = original.checked;
-
-      if(original.checked){
-        copy.setAttribute('checked','checked');
-      }else{
-        copy.removeAttribute('checked');
-      }
-    }
-    else{
-      copy.value = original.value;
-      copy.setAttribute('value', original.value);
+    if(src.type === 'checkbox' || src.type === 'radio'){
+      dst.checked = src.checked;
+    }else if(src.type !== 'file'){
+      dst.value = src.value;
     }
 
-    if(original.tagName === 'TEXTAREA'){
-      copy.textContent = original.value;
-    }
-
-    if(original.tagName === 'SELECT'){
-      [...copy.options].forEach((option, j) => {
-        option.selected = original.options[j]?.selected || false;
-
-        if(option.selected){
-          option.setAttribute('selected','selected');
-        }else{
-          option.removeAttribute('selected');
-        }
+    if(src.tagName === 'SELECT'){
+      [...dst.options].forEach((o,j)=>{
+        o.selected = !!src.options[j]?.selected;
       });
     }
+
+    if(src.tagName === 'TEXTAREA'){
+      dst.textContent = src.value;
+    }
   });
 
-  // --------------------------------------------------
-  // تحويل التوقيعات الموجودة في Canvas إلى صور
-  // --------------------------------------------------
+  // ===== تحويل الحقول إلى نصوص واضحة داخل PDF =====
+  clone.querySelectorAll(
+    'input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),select,textarea'
+  ).forEach(el=>{
+    const value = (
+      el.tagName === 'SELECT'
+        ? (el.selectedOptions[0]?.text || '')
+        : (el.value || '')
+    ).trim();
 
-  const originalCanvases = form.querySelectorAll('canvas');
-  const cloneCanvases = clone.querySelectorAll('canvas');
+    const span = document.createElement('div');
+    span.className = 'pdf-value';
+    span.textContent = value || '—';
+    el.replaceWith(span);
+  });
 
-  originalCanvases.forEach((canvas, i) => {
-    const targetCanvas = cloneCanvases[i];
+  // الاختيارات: إبقاء المحدد فقط مع علامة واضحة.
+  clone.querySelectorAll('input[type="radio"],input[type="checkbox"]').forEach(el=>{
+    const label = el.closest('label');
 
-    if(!targetCanvas) return;
+    if(!el.checked){
+      if(label) label.remove();
+      else el.remove();
+      return;
+    }
 
-    try{
+    const mark = document.createElement('span');
+    mark.className = 'pdf-check';
+    mark.textContent = '☑ ';
+    el.replaceWith(mark);
+  });
+
+  // لا نريد أدوات الأستاذ أو أزرار التحكم في وثيقة التلميذ.
+  clone.querySelectorAll('button,.teacher,#status,.actions').forEach(x=>x.remove());
+
+  // ===== إخفاء خانة الصورة من PDF فقط =====
+  // الاستمارة الأصلية على الموقع تبقى كما هي، لكن وثيقة PDF لا تعرض مربع الصورة.
+  clone.querySelectorAll('.photo-wrap').forEach(x=>x.remove());
+
+  // ===== الحفاظ على التوقيعات =====
+  ['studentSig','teacherSig'].forEach(id=>{
+    const src = $(id);
+    const dst = clone.querySelector('#'+id);
+
+    if(src && dst){
       const img = document.createElement('img');
-
-      img.src = canvas.toDataURL('image/png');
-
-      img.style.width = canvas.clientWidth + 'px';
-      img.style.height = canvas.clientHeight + 'px';
-      img.style.display = 'block';
-      img.style.objectFit = 'contain';
-
-      targetCanvas.parentNode.replaceChild(img, targetCanvas);
-    }catch(e){
-      console.warn('تعذر نسخ التوقيع:', e);
+      img.src = src.toDataURL('image/png');
+      img.alt = 'التوقيع';
+      Object.assign(img.style,{
+        display:'block',
+        width:'100%',
+        height:'65px',
+        objectFit:'contain'
+      });
+      dst.replaceWith(img);
     }
   });
 
-  // --------------------------------------------------
-  // تنسيق خاص للطباعة
-  // --------------------------------------------------
+  // ===== تنسيق PDF: خط أكبر وواجهة الشعارات واضحة =====
+  const style = document.createElement('style');
+  style.textContent = `
+    *{box-sizing:border-box!important}
+    html,body{margin:0!important;padding:0!important;background:#fff!important}
+    body{font-family:Tahoma,Arial,sans-serif!important;color:#111!important}
 
-  const css = document.createElement('style');
-
-  css.textContent = `
-    *{
-      box-sizing:border-box !important;
+    #aqbaPdfHolder{
+      direction:rtl!important;
+      background:#fff!important;
     }
 
-    body{
-      background:#fff !important;
+    #studentPdfHeader{
+      display:block!important;
+      width:100%!important;
+      margin:0 0 5px 0!important;
+      padding:5px!important;
+      background:#fff!important;
+      border:1px solid #d5dadd!important;
+      border-top:3px solid #0b7a4b!important;
+      border-radius:5px!important;
+      box-shadow:none!important;
+    }
+
+    #studentPdfHeader .logos{
+      display:grid!important;
+      grid-template-columns:1fr 2fr 1fr!important;
+      gap:5px!important;
+      align-items:center!important;
+    }
+
+    #studentPdfHeader .logo{
+      display:block!important;
+      width:100%!important;
+      height:58px!important;
+      object-fit:contain!important;
+      visibility:visible!important;
+      opacity:1!important;
+    }
+
+    #studentPdfHeader .title h1{
+      font-size:19px!important;
+      margin:2px 0!important;
+    }
+
+    #studentPdfHeader .title h2{
+      font-size:13px!important;
+      margin:2px 0!important;
+    }
+
+    #studentPdfHeader .title h3{
+      font-size:13px!important;
+      margin:2px 0!important;
+    }
+
+    #studentPdfHeader .fixed{
+      font-size:10px!important;
+      padding:4px 7px!important;
     }
 
     #studentFormPDF{
-      background:#fff !important;
-      color:#111 !important;
-      direction:rtl !important;
+      width:100%!important;
+      margin:0!important;
+      padding:0!important;
+      background:#fff!important;
+      box-shadow:none!important;
+      font-size:10px!important;
+      line-height:1.35!important;
+      color:#111!important;
     }
 
-    #studentFormPDF input,
-    #studentFormPDF select,
-    #studentFormPDF textarea{
-      color:#111 !important;
-      background:#fff !important;
-      border:1px solid #777 !important;
-      font-family:Tahoma,Arial,sans-serif !important;
+    #studentFormPDF .card{
+      padding:6px!important;
+      margin:0 0 5px!important;
+      border:1px solid #d4d9dd!important;
+      border-radius:5px!important;
+      box-shadow:none!important;
+      background:#fff!important;
     }
 
-    #studentFormPDF textarea{
-      white-space:pre-wrap !important;
+    #studentFormPDF .section-title{
+      font-size:13px!important;
+      line-height:1.25!important;
+      margin:5px 0 5px!important;
+      padding-bottom:3px!important;
+      border-bottom:1px solid #aeb6bd!important;
     }
 
-    #studentFormPDF button{
-      display:none !important;
+    #studentFormPDF .grid,
+    #studentFormPDF .grid3{
+      gap:5px!important;
     }
 
-    #studentFormPDF canvas{
-      display:none !important;
+    #studentFormPDF .field label{
+      display:block!important;
+      font-size:9.5px!important;
+      font-weight:700!important;
+      margin-bottom:2px!important;
     }
 
-    #studentFormPDF img{
-      max-width:100% !important;
+    #studentFormPDF .pdf-value{
+      display:block!important;
+      min-height:20px!important;
+      padding:3px 5px!important;
+      border:1px solid #bfc6cb!important;
+      border-radius:3px!important;
+      background:#fff!important;
+      font-size:10px!important;
+      line-height:1.35!important;
+      color:#111!important;
+      white-space:normal!important;
+      overflow-wrap:anywhere!important;
     }
 
-    .page-break{
-      page-break-before:always !important;
-      break-before:page !important;
+    #studentFormPDF .check{
+      padding:3px 5px!important;
+      margin:1px!important;
+      gap:3px!important;
+      font-size:9.5px!important;
     }
 
-    .avoid-break{
-      page-break-inside:avoid !important;
-      break-inside:avoid !important;
+    #studentFormPDF .contract{
+      max-height:none!important;
+      overflow:visible!important;
+      padding:6px!important;
+      font-size:8.2px!important;
+      line-height:1.28!important;
     }
+
+    #studentFormPDF .contract li{
+      margin-bottom:2px!important;
+    }
+
+    #studentFormPDF .signature-area{
+      gap:7px!important;
+    }
+
+    #studentFormPDF .sigbox{
+      padding:4px!important;
+    }
+
+    #studentFormPDF .sigbox canvas{
+      height:65px!important;
+    }
+
+    #studentFormPDF .pdf-check{
+      font-weight:700!important;
+      font-size:10px!important;
+    }
+
+    #studentFormPDF .hidden{
+      display:block!important;
+    }
+
+    #studentFormPDF .page2{
+      break-before:page!important;
+      page-break-before:always!important;
+    }
+
+    @page{size:A4 portrait;margin:7mm}
   `;
+  holder.prepend(style);
 
-  clone.prepend(css);
-  render.appendChild(clone);
-  document.body.appendChild(render);
+  // القسم 5 يبدأ الصفحة الثانية حتى لا تختلط الأقسام.
+  const headings = [...clone.querySelectorAll('.section-title')];
+  const h5 = headings.find(x=>x.textContent.includes('5. معلومات صحية وشخصية'));
+  if(h5) h5.classList.add('page2');
+
+  document.body.appendChild(holder);
 
   try{
-
-    // إعطاء المتصفح وقتاً لإظهار النسخة قبل التصوير
-    await new Promise(resolve => {
-      requestAnimationFrame(() => {
-        requestAnimationFrame(resolve);
+    // انتظار تحميل الشعارات وأي صور داخل الواجهة.
+    const images = [...holder.querySelectorAll('img')];
+    await Promise.all(images.map(img=>{
+      if(img.complete) return Promise.resolve();
+      return new Promise(resolve=>{
+        img.onload = resolve;
+        img.onerror = resolve;
       });
-    });
+    }));
 
-    await html2pdf()
-      .set({
-        margin:[5,5,5,5],
-
-        filename:'استمارة_التلميذ_عقبة_بن_نافع_2026-2027.pdf',
-
-        image:{
-          type:'jpeg',
-          quality:0.98
-        },
-
-        html2canvas:{
-          scale:2,
-          useCORS:true,
-          allowTaint:true,
-          backgroundColor:'#ffffff',
-          logging:false,
-          scrollX:0,
-          scrollY:0
-        },
-
-        jsPDF:{
-          unit:'mm',
-          format:'a4',
-          orientation:'portrait'
-        },
-
-        pagebreak:{
-          mode:['css','legacy']
-        }
-
-      })
-      .from(render)
-      .save();
-
-  }catch(err){
-
-    console.error(err);
-
-    alert(
-      'تعذر إنشاء ملف PDF. حاول مرة أخرى.\n\n' +
-      (err?.message || 'خطأ غير معروف')
+    await new Promise(resolve=>
+      requestAnimationFrame(()=>requestAnimationFrame(resolve))
     );
 
+    await html2pdf().set({
+      margin:[7,7,7,7],
+      filename:'استمارة_التلميذ_عقبة_بن_نافع_2026-2027.pdf',
+      image:{type:'jpeg',quality:0.98},
+      html2canvas:{
+        scale:2,
+        useCORS:true,
+        allowTaint:true,
+        backgroundColor:'#ffffff',
+        logging:false,
+        scrollX:0,
+        scrollY:0
+      },
+      jsPDF:{
+        unit:'mm',
+        format:'a4',
+        orientation:'portrait'
+      },
+      pagebreak:{mode:['css','legacy']}
+    }).from(holder).save();
+
+  }catch(err){
+    console.error(err);
+    alert('تعذر إنشاء PDF. حاول مرة أخرى.');
   }finally{
-
-    render.remove();
-
-    buttons.forEach(b => b.disabled = false);
+    holder.remove();
+    buttons.forEach(b=>b.disabled=false);
   }
 }
+
+function printPDF(){
   const form=$('studentForm');
   if(!form.checkValidity()){form.reportValidity();return}
-  if(signatureEmpty('studentSig')){alert('المرجو توقيع التلميذ يدوياً قبل إنشاء الوثيقة.');return}
-  if(typeof html2pdf==='undefined'){alert('خدمة PDF غير متاحة. تحقق من الإنترنت ثم أعد المحاولة.');return}
-  const buttons=[...form.querySelectorAll('button')]; buttons.forEach(b=>b.disabled=true);
-  const render=document.createElement('div');
-  render.id='aqbaPdfRender'; render.dir='rtl';
-  Object.assign(render.style,{position:'fixed',left:'0',top:'0',width:'210mm',background:'#fff',zIndex:'2147483647',padding:'10mm',boxSizing:'border-box',fontFamily:'Tahoma,Arial,sans-serif',color:'#111',overflow:'visible'});
-  const clone=form.cloneNode(true); clone.id='studentFormPDF';
-  Object.assign(clone.style,{display:'block',width:'190mm',margin:'0',padding:'0',background:'#fff',boxShadow:'none',visibility:'visible',opacity:'1',height:'auto',minHeight:'0',overflow:'visible'});
-
-  // Copy live values before replacing controls.
-  const srcs=form.querySelectorAll('input,select,textarea');
-  const dsts=clone.querySelectorAll('input,select,textarea');
-  srcs.forEach((src,i)=>{const dst=dsts[i];if(!dst)return;if(src.type==='checkbox'||src.type==='radio')dst.checked=src.checked;else dst.value=src.value;if(src.tagName==='SELECT'){[...dst.options].forEach((o,j)=>o.selected=!!src.options[j]?.selected)}});
-
-  clone.querySelectorAll('input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),select,textarea').forEach(el=>{
-    let value='';
-    if(el.tagName==='SELECT') value=el.selectedOptions?.[0]?.text||''; else value=el.value||'';
-    const span=document.createElement('span'); span.className='pdf-value'; span.textContent=value.trim()||'—'; el.replaceWith(span);
-  });
-  clone.querySelectorAll('input[type="file"]').forEach(el=>el.remove());
-  clone.querySelectorAll('input[type="radio"],input[type="checkbox"]').forEach(el=>{if(!el.checked)el.remove();else{const m=document.createElement('span');m.textContent='☑';m.className='pdf-check';el.replaceWith(m)}});
-  clone.querySelectorAll('button').forEach(b=>b.remove());
-  clone.querySelectorAll('.teacher,.actions,#status').forEach(x=>x.remove());
-
-  ['studentSig','teacherSig'].forEach(id=>{const src=$(id),dst=clone.querySelector('#'+id);if(src&&dst){const img=document.createElement('img');img.src=src.toDataURL('image/png');img.style.cssText='display:block;width:100%;height:70px;object-fit:contain';dst.replaceWith(img)}});
-  const sp=$('photoPreview'),dp=clone.querySelector('#photoPreview'); if(sp&&dp&&sp.src){dp.src=sp.src;dp.style.display='block';dp.style.maxWidth='100%;'}
-
-  const css=document.createElement('style'); css.textContent=`
-    #studentFormPDF{font-size:8px!important;line-height:1.18!important}
-    #studentFormPDF *{box-sizing:border-box!important}
-    #studentFormPDF .card{padding:5px!important;margin:0!important;box-shadow:none!important;border-radius:0!important}
-    #studentFormPDF .section-title{font-size:10px!important;margin:6px 0 4px!important}
-    #studentFormPDF .field label{font-size:7px!important;margin-bottom:1px!important}
-    #studentFormPDF .pdf-value{display:block!important;min-height:17px!important;padding:2px 4px!important;border-bottom:1px solid #777!important;font-size:8px!important;white-space:normal!important;overflow-wrap:anywhere!important}
-    #studentFormPDF .grid,#studentFormPDF .grid3{gap:4px!important}
-    #studentFormPDF .contract{font-size:7px!important;line-height:1.25!important;max-height:none!important;overflow:visible!important}
-    #studentFormPDF .contract li{margin-bottom:2px!important}
-    #studentFormPDF .photo-box{width:70px!important;height:85px!important}
-    #studentFormPDF .signature-area{gap:8px!important}
-    #studentFormPDF .sigbox{padding:4px!important}
-    #studentFormPDF .pdf-check{font-weight:700!important}
-    #studentFormPDF .page2{break-before:page!important;page-break-before:always!important}
-  `; clone.prepend(css);
-  const hs=[...clone.querySelectorAll('.section-title')]; const h6=hs.find(h=>h.textContent.includes('6. التعاقد')); if(h6)h6.classList.add('page2');
-  render.appendChild(clone); document.body.appendChild(render);
-  try{
-    await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
-    await html2pdf().set({
-      margin:[5,5,5,5],filename:'استمارة_التلميذ_عقبة_بن_نافع_2026-2027.pdf',
-      image:{type:'jpeg',quality:.98},
-      html2canvas:{scale:2,useCORS:true,allowTaint:true,backgroundColor:'#fff',logging:false,scrollX:0,scrollY:0,width:render.scrollWidth,height:render.scrollHeight},
-      jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},pagebreak:{mode:['css','legacy']}
-    }).from(render).save();
-  }catch(err){console.error(err);alert('تعذر إنشاء PDF: '+(err?.message||'خطأ غير معروف'));}
-  finally{render.remove();buttons.forEach(b=>b.disabled=false)}
+  if(signatureEmpty('studentSig')){alert('المرجو توقيع التلميذ قبل الطباعة.');return}
+  window.print();
 }
-
 function resetForm(){if(!confirm('هل تريد فعلاً مسح جميع البيانات؟'))return;localStorage.removeItem(STORAGE);location.reload()}
 function exportData(){
  const d=collect(), blob=new Blob([JSON.stringify(d,null,2)],{type:'application/json;charset=utf-8'}),a=document.createElement('a');
