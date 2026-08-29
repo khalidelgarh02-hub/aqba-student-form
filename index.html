@@ -129,6 +129,7 @@ async function sendStudentToDatabase(d) {
 }
 </script>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 <body>
 <div class="container">
@@ -462,13 +463,50 @@ $('studentForm').addEventListener('submit', async e=>{
 });
 function loadSaved(){const d=JSON.parse(localStorage.getItem(STORAGE)||'null');if(!d){alert('لا توجد بيانات محفوظة.');return}apply(d);$('status').textContent='تم استرجاع آخر بيانات محفوظة.'}
 
-function makePDF(){
+async function makePDF(){
   const form=$('studentForm');
   if(!form.checkValidity()){form.reportValidity();return}
   if(signatureEmpty('studentSig')){alert('المرجو توقيع التلميذ يدوياً قبل إنشاء الوثيقة.');return}
+  if(typeof html2pdf === 'undefined'){
+    alert('تعذر تحميل خدمة إنشاء PDF. تأكد من اتصال الهاتف بالإنترنت ثم أعد المحاولة.');
+    return;
+  }
   localStorage.setItem(STORAGE,JSON.stringify(collect()));
-  alert('ستفتح نافذة الطباعة. اختر «حفظ كملف PDF / Save as PDF»، ثم اختر حجم الورق A4. الاستمارة مهيأة في صفحتين كحد أقصى.');
-  window.print();
+  const btns=[...form.querySelectorAll('button')];
+  btns.forEach(b=>b.disabled=true);
+  const holder=document.createElement('div');
+  holder.dir='rtl';
+  holder.style.position='fixed'; holder.style.left='-10000px'; holder.style.top='0';
+  holder.style.width='210mm'; holder.style.background='#fff'; holder.style.zIndex='-1';
+  const clone=form.cloneNode(true);
+  clone.style.width='190mm'; clone.style.margin='0'; clone.style.padding='5mm';
+  clone.style.background='#fff'; clone.style.boxShadow='none';
+  clone.querySelectorAll('button').forEach(b=>b.remove());
+  const c1=document.getElementById('studentSig');
+  const c2=clone.querySelector('#studentSig');
+  if(c1 && c2){
+    const img=document.createElement('img');
+    img.src=c1.toDataURL('image/png'); img.alt='توقيع التلميذ';
+    img.style.display='block'; img.style.width='100%'; img.style.height='90px'; img.style.objectFit='contain';
+    c2.replaceWith(img);
+  }
+  holder.appendChild(clone); document.body.appendChild(holder);
+  try{
+    await new Promise(r=>setTimeout(r,300));
+    await html2pdf().set({
+      margin:[4,4,4,4],
+      filename:'استمارة_التلميذ_عقبة_بن_نافع_2026-2027.pdf',
+      image:{type:'jpeg',quality:0.98},
+      html2canvas:{scale:1.6,useCORS:true,backgroundColor:'#ffffff',logging:false},
+      jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},
+      pagebreak:{mode:['css','legacy'],avoid:['.field','.section','.card']}
+    }).from(clone).save();
+  }catch(err){
+    console.error(err);
+    alert('تعذر إنشاء ملف PDF. يرجى إعادة المحاولة بعد التأكد من اتصال الهاتف بالإنترنت.');
+  }finally{
+    holder.remove(); btns.forEach(b=>b.disabled=false);
+  }
 }
 
 function resetForm(){if(!confirm('هل تريد فعلاً مسح جميع البيانات؟'))return;localStorage.removeItem(STORAGE);location.reload()}
