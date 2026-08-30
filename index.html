@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>الورقة الشخصية للتلميذ — عقبة بن نافع</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f3f6f5;color:#17211d;font-family:Tahoma,Arial,sans-serif;line-height:1.65}.page{max-width:1100px;margin:20px auto;padding:0 14px}.card{background:#fff;border:1px solid #dfe6e2;border-radius:16px;box-shadow:0 4px 18px #0001;padding:22px;margin-bottom:18px}.header{border-top:6px solid #087443}.headerGrid{display:grid;grid-template-columns:1fr 2fr 1fr;gap:16px;align-items:center}.logo{min-height:100px;border:1px solid #d7dfdb;border-radius:12px;background:#fafcfb;display:flex;align-items:center;justify-content:center;text-align:center;font-weight:700;color:#163b2d}.emblem{width:60px;height:60px;border:3px solid #087443;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:auto;font-size:25px}.title{text-align:center}.title h1{margin:4px;color:#8f1e1e;font-size:27px}.title h2{margin:4px;color:#126b4f;font-size:21px}.title h3{margin:5px;font-size:18px}.muted{color:#65736d}.grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.section{margin:0 0 14px;padding-bottom:8px;border-bottom:2px solid #e5ece9;color:#126b4f;font-size:21px}.field label{display:block;font-weight:700;margin-bottom:6px}input,select,textarea{width:100%;padding:12px;border:1px solid #cfd8d4;border-radius:9px;background:#fff;font:inherit;font-size:16px}textarea{min-height:95px}.req{color:#a92323}.photo{display:grid;grid-template-columns:180px 1fr;gap:18px}.photoBox{width:170px;height:205px;border:2px dashed #aebbb5;border-radius:12px;display:flex;align-items:center;justify-content:center;overflow:hidden;text-align:center;color:#68756f}.photoBox img{width:100%;height:100%;object-fit:cover}.notice{background:#eef8f3;border-right:5px solid #087443;padding:13px;border-radius:8px}.check{display:flex;gap:8px;align-items:flex-start}.check input{width:auto}.sig{width:100%;height:145px;border:1px dashed #9daaa5;border-radius:10px;touch-action:none}.actions{display:flex;gap:10px;flex-wrap:wrap}button{border:0;border-radius:9px;padding:12px 18px;font:inherit;font-weight:700;cursor:pointer}.main{background:#087443;color:#fff}.pdf{background:#1677b8;color:#fff}.gray{background:#69757b;color:#fff}.test{background:#7957a5;color:#fff}.status{margin-top:12px;padding:11px;border-radius:9px;background:#f2f4f4;white-space:pre-wrap}.ok{background:#e9f8ef;color:#116b3e}.err{background:#fff0f0;color:#a92323}.pdfPage{width:210mm;min-height:297mm;background:#fff;padding:8mm;color:#111;direction:rtl;font-family:Tahoma,Arial,sans-serif}.pdfPage .headerGrid{gap:10px}.pdfPage .logo{min-height:75px;font-size:12px}.pdfPage .emblem{width:45px;height:45px;font-size:19px}.pdfPage .title h1{font-size:21px}.pdfPage .title h2{font-size:17px}.pdfPage .title h3{font-size:14px}.pdfPage .section{font-size:16px;margin-bottom:8px}.pdfPage .card{box-shadow:none;border-radius:7px;padding:10px;margin-bottom:8px}.pdfPage .field label{font-size:11px;margin-bottom:2px}.pdfValue{min-height:27px;border:1px solid #bfc9c5;border-radius:5px;padding:4px 7px;font-size:11px}.pdfPage .grid2,.pdfPage .grid3{gap:7px}.pdfPage .notice{font-size:10px;padding:7px}.pdfSig{width:100%;height:70px;border:1px solid #bfc9c5;border-radius:5px}.footer{text-align:center;font-size:9px;color:#66736e;margin-top:8px}@media(max-width:750px){.headerGrid,.grid2,.grid3,.photo{grid-template-columns:1fr}.photoBox{margin:auto}}
+
+.officialHeader{width:100%;display:flex;justify-content:center;align-items:center;background:#fff;border:1px solid #d7dfdb;border-radius:12px;padding:8px;overflow:hidden}
+.officialHeader img{display:block;width:100%;max-width:900px;height:auto;object-fit:contain}
+.title{margin-top:12px}
+.title h1{font-size:30px}
+.title h2{font-size:23px}
+.title h3{font-size:19px}
+@media(max-width:750px){.officialHeader img{max-width:100%}.title h1{font-size:24px}.title h2{font-size:20px}}
+.pdfPage .officialHeader{padding:4px;border-radius:5px}
+.pdfPage .officialHeader img{width:100%;max-height:31mm;object-fit:contain}.pdfPage #photoSection,.pdfPage .photo{display:none!important}
+.pdfPage .title h1{font-size:23px}
+.pdfPage .title h2{font-size:19px}
+.pdfPage .title h3{font-size:16px}
+.pdfPage .section{font-size:18px}
+.pdfPage .field label{font-size:12px}
+.pdfValue{font-size:13px;min-height:30px}
+</style>
+</head>
+<body>
+<div class="page">
+<div class="card header">
+  <div class="officialHeader">
+    <img src="logo-officiel.png" alt="شعار وزارة التربية الوطنية المغربية">
+  </div>
+  <div class="title">
+    <h1>الثانوية التأهيلية عقبة بن نافع</h1>
+    <h2>الورقة الشخصية للتلميذ</h2>
+    <h3>الموسم الدراسي 2026-2027</h3>
+    <div class="muted">استمارة إلكترونية لجمع المعطيات الخاصة بالتلاميذ</div>
+  </div>
+</div>
+<form id="studentForm" novalidate>
+<div class="card"><h2 class="section">1. المعلومات الشخصية</h2><div class="grid2">
+<div class="field"><label>الاسم الكامل <span class="req">*</span></label><input id="full_name" required></div>
+<div class="field"><label>الاسم الكامل بالفرنسية</label><input id="full_name_fr"></div>
+<div class="field"><label>الجنس</label><select id="gender"><option value="">اختر</option><option>ذكر</option><option>أنثى</option></select></div>
+<div class="field"><label>تاريخ الازدياد</label><input id="birth_date" type="date"></div>
+<div class="field"><label>مكان الازدياد</label><input id="birth_place"></div>
+<div class="field"><label>رقم مسار / رقم التلميذ</label><input id="student_code"></div>
+</div></div>
+<div class="card"><h2 class="section">2. المعلومات الدراسية</h2><div class="grid2">
+<div class="field"><label>المستوى الدراسي <span class="req">*</span></label><select id="current_level" required><option value="">اختر المستوى</option><option>الجذع مشترك علوم</option><option>الجذع مشترك آداب</option><option>أولى باكالوريا علوم تجريبية</option><option>أولى باكالوريا آداب وعلوم إنسانية</option><option>الثانية باكالوريا علوم فيزيائية</option><option>الثانية باكالوريا علوم الحياة والأرض</option><option>الثانية باكالوريا علوم إنسانية</option><option>الثانية باكالوريا آداب</option></select></div>
+<div class="field"><label>القسم <span class="req">*</span></label><input id="class_name" required placeholder="مثال: 1BAC-SC-2"></div>
+</div></div>
+<div class="card"><h2 class="section">3. المعطيات البدنية والرياضية</h2><div class="grid3">
+<div class="field"><label>الرياضة المفضلة</label><input id="favorite_sport"></div><div class="field"><label>الطول (سم)</label><input id="height" type="number" min="50" max="250"></div><div class="field"><label>الوزن (كلغ)</label><input id="weight" type="number" min="10" max="250" step="0.1"></div></div><br>
+<div class="field"><label>هل سبق لك تمثيل المؤسسة في منافسة رياضية؟</label><label><input type="radio" name="represented" value="نعم"> نعم</label> <label><input type="radio" name="represented" value="لا"> لا</label></div><br>
+<div class="grid2"><div class="field"><label>اسم المنافسة</label><input id="competition_name"></div><div class="field"><label>مستوى المنافسة</label><select id="competition_level"><option value="">اختر</option><option>مؤسساتي</option><option>إقليمي</option><option>جهوي</option><option>وطني</option><option>دولي</option></select></div></div></div>
+<div class="card" id="photoSection"><h2 class="section">4. صورة التلميذ</h2><div class="photo"><div class="photoBox" id="photoBox">لا توجد صورة</div><div><input id="photo" type="file" accept="image/*"><p class="muted">ملاحظة: خانة الصورة تظهر في الاستمارة فقط، ويتم إخفاؤها تلقائيا عند إنشاء PDF.</p></div></div></div>
+<div class="card"><h2 class="section">5. ملاحظات إضافية</h2><textarea id="notes" placeholder="اكتب أي ملاحظات إضافية عند الحاجة..."></textarea></div>
+<div class="card"><h2 class="section">6. الموافقة والتوقيع الإلكتروني</h2><div class="notice">أقر بأن المعلومات التي أدخلتها صحيحة، وأوافق على استعمالها في إطار تدبير التربية البدنية والرياضية بالمؤسسة.</div><br><label class="check"><input id="agreement" type="checkbox" required><span>أوافق على الشروط وأؤكد صحة المعلومات المدخلة <span class="req">*</span></span></label><br><label>توقيع التلميذ <span class="req">*</span></label><canvas id="signature" class="sig"></canvas><button type="button" class="gray" onclick="clearSig()">مسح التوقيع</button></div>
+<div class="card"><div class="actions"><button type="button" class="main" id="saveBtn" onclick="saveData()">💾 حفظ وإرسال الاستمارة</button><button type="button" class="pdf" id="pdfBtn" onclick="makePDF()">📄 الحصول على PDF</button><button type="button" class="gray" onclick="resetForm()">↺ إعادة تعيين</button><button type="button" class="test" onclick="testConnection()">🔎 اختبار الاتصال</button></div><div id="status" class="status">لم يتم إرسال البيانات بعد.</div></div>
+</form></div>
+<div id="pdfHost" style="position:fixed;left:-100000px;top:0;width:210mm"></div>
+<script>
+const SUPABASE_URL='https://jwzebyfhsfszpgswnbyh.supabase.co';
+const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSI6IkN4YW5jIiwicmVmIjoianl6ZWJ5ZnNmc3pwZ3N3bmJ5aCIsInJvbGUiOiJhbm9uIiwiaWF0IjoxNzg3OTk4Njk4LCJleHAiOjIxMDM1NzQ2OTh9.fh5DvtvMMZn3rPkFnJsVokJJPfJQLZYWGrQsEGrMQbc';
+const sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);const form=document.getElementById('studentForm');const statusBox=document.getElementById('status');
+function status(t,c=''){statusBox.textContent=t;statusBox.className='status '+c}function v(id){return document.getElementById(id).value.trim()}function r(n){return document.querySelector('input[name="'+n+'"]:checked')?.value||''}function esc(x){return String(x??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
+let drawing=false,dirty=false;const can=document.getElementById('signature'),ctx=can.getContext('2d');function resize(){const q=devicePixelRatio||1,w=can.clientWidth,h=can.clientHeight;can.width=w*q;can.height=h*q;ctx.setTransform(q,0,0,q,0,0);ctx.lineWidth=2;ctx.lineCap='round';ctx.strokeStyle='#111'}resize();addEventListener('resize',resize);function pt(e){const z=can.getBoundingClientRect(),t=e.touches?.[0];return{x:(t?t.clientX:e.clientX)-z.left,y:(t?t.clientY:e.clientY)-z.top}}function start(e){drawing=true;dirty=true;let p=pt(e);can.lx=p.x;can.ly=p.y;e.preventDefault()}function move(e){if(!drawing)return;let p=pt(e);ctx.beginPath();ctx.moveTo(can.lx,can.ly);ctx.lineTo(p.x,p.y);ctx.stroke();can.lx=p.x;can.ly=p.y;e.preventDefault()}can.onmousedown=start;can.onmousemove=move;onmouseup=()=>drawing=false;can.ontouchstart=start;can.ontouchmove=move;ontouchend=()=>drawing=false;function clearSig(){ctx.clearRect(0,0,can.width,can.height);dirty=false}function emptySig(){const a=ctx.getImageData(0,0,can.width,can.height).data;for(let i=3;i<a.length;i+=4)if(a[i])return false;return true}
+document.getElementById('photo').onchange=function(){const f=this.files?.[0];if(!f){document.getElementById('photoBox').textContent='لا توجد صورة';return}const q=new FileReader();q.onload=()=>document.getElementById('photoBox').innerHTML='<img src="'+q.result+'" alt="صورة التلميذ">';q.readAsDataURL(f)};
+function valid(){if(!form.checkValidity()){form.reportValidity();return false}if(emptySig()){alert('المرجو توقيع التلميذ قبل المتابعة.');return false}return true}function data(){return{full_name:v('full_name'),full_name_fr:v('full_name_fr'),current_level:v('current_level'),class_name:v('class_name'),favorite_sport:v('favorite_sport'),represented:r('represented'),competition_name:v('competition_name'),competition_level:v('competition_level'),height:v('height'),weight:v('weight')}}
+async function saveData(){if(!valid())return;const b=document.getElementById('saveBtn');b.disabled=true;status('جارٍ إرسال البيانات إلى قاعدة البيانات...');try{const{error}=await sb.from('students').insert([data()]);if(error)throw error;status('✓ تم حفظ الاستمارة بنجاح وإرسال بيانات التلميذ إلى قاعدة البيانات.\n✓ ستظهر البيانات في لوحة الأستاذ بعد التحديث.','ok')}catch(e){console.error(e);status('✗ تعذر إرسال البيانات.\n'+(e.message||e),'err')}finally{b.disabled=false}}
+async function testConnection(){status('جارٍ اختبار الاتصال...');try{const{error}=await sb.from('students').select('id',{head:true,count:'exact'});if(error)throw error;status('✓ الاتصال بقاعدة البيانات يعمل.','ok')}catch(e){status('✗ تعذر الاتصال/الصلاحيات.\n'+(e.message||e),'err')}}
+function pv(l,x){return '<div class="field"><label>'+esc(l)+'</label><div class="pdfValue">'+esc(x||'—')+'</div></div>'}
+function buildPDF(){const d=data(),w=document.createElement('div');w.className='pdfPage';w.innerHTML='<div class="header card"><div class="officialHeader"><img src="logo-officiel.png" alt="شعار وزارة التربية الوطنية المغربية"></div><div class="title"><h1>الثانوية التأهيلية عقبة بن نافع</h1><h2>الورقة الشخصية للتلميذ</h2><h3>الموسم الدراسي 2026-2027</h3></div></div><div class="card"><h2 class="section">1. المعلومات الشخصية</h2><div class="grid2">'+pv('الاسم الكامل',d.full_name)+pv('الاسم الكامل بالفرنسية',d.full_name_fr)+pv('الجنس',v('gender'))+pv('تاريخ الازدياد',v('birth_date'))+pv('مكان الازدياد',v('birth_place'))+pv('رقم مسار / رقم التلميذ',v('student_code'))+'</div></div><div class="card"><h2 class="section">2. المعلومات الدراسية</h2><div class="grid2">'+pv('المستوى الدراسي',d.current_level)+pv('القسم',d.class_name)+'</div></div><div class="card"><h2 class="section">3. المعطيات البدنية والرياضية</h2><div class="grid3">'+pv('الرياضة المفضلة',d.favorite_sport)+pv('الطول (سم)',d.height)+pv('الوزن (كلغ)',d.weight)+'</div><br><div class="grid3">'+pv('تمثيل المؤسسة',r('represented'))+pv('اسم المنافسة',d.competition_name)+pv('مستوى المنافسة',d.competition_level)+'</div></div><div class="card"><h2 class="section">4. ملاحظات إضافية</h2><div class="pdfValue" style="min-height:55px">'+esc(v('notes')||'—')+'</div></div><div class="card"><h2 class="section">5. الموافقة والتوقيع</h2><div class="notice">أقر بأن المعلومات التي أدخلتها صحيحة، وأوافق على استعمالها في إطار تدبير التربية البدنية والرياضية بالمؤسسة.</div><br><div class="grid2"><div>'+pv('الموافقة','أوافق على الشروط وأؤكد صحة المعلومات')+'</div><div><label>توقيع التلميذ</label><canvas id="pdfSig" class="pdfSig"></canvas></div></div></div><div class="footer">الثانوية التأهيلية عقبة بن نافع — الموسم الدراسي 2026-2027</div>';return w}
+async function makePDF(){if(!valid())return;if(typeof html2pdf==='undefined'){alert('خدمة PDF غير متاحة. تحقق من الاتصال بالإنترنت ثم أعد المحاولة.');return}const b=document.getElementById('pdfBtn');b.disabled=true;status('جارٍ إعداد PDF...');const host=document.getElementById('pdfHost');host.innerHTML='';const p=buildPDF();host.appendChild(p);await new Promise(q=>requestAnimationFrame(q));const dst=document.getElementById('pdfSig');dst.getContext('2d').drawImage(can,0,0,dst.width,dst.height);try{await html2pdf().set({margin:0,filename:'aqba_student_'+Date.now()+'.pdf',image:{type:'jpeg',quality:.98},html2canvas:{scale:2,useCORS:true,allowTaint:true,backgroundColor:'#fff',scrollX:0,scrollY:0},jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}}).from(p).save();status('✓ تم إنشاء ملف PDF بنجاح.','ok')}catch(e){status('✗ حدث خطأ أثناء إنشاء PDF.\n'+(e.message||e),'err')}finally{host.innerHTML='';b.disabled=false}}
+function resetForm(){if(!confirm('هل تريد مسح جميع المعلومات؟'))return;form.reset();document.getElementById('photoBox').textContent='لا توجد صورة';clearSig();status('تمت إعادة تعيين الاستمارة.')}
+</script>
+</body></html>
