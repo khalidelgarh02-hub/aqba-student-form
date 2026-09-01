@@ -25,7 +25,7 @@ button{border:0;border-radius:10px;padding:10px 15px;cursor:pointer;font:inherit
   <p class="center">الثانوية التأهيلية عقبة بن نافع — الجمعية الرياضية</p>
   <div class="field"><label>البريد الإلكتروني</label><input id="email" type="email"></div>
   <div class="field" style="margin-top:10px"><label>كلمة المرور</label><input id="password" type="password"></div>
-  <button class="primary" style="width:100%;margin-top:14px" onclick="login()">دخول</button>
+  <button class="primary" style="width:100%;margin-top:14px" onclick="login()">دخول</button><button class="light" style="width:100%;margin-top:8px" onclick="forgotPassword()">نسيت كلمة المرور؟</button>
   <div id="loginError" class="error"></div>
 </div>
 
@@ -68,6 +68,15 @@ const URL='https://jwzebyfhsfszpgswnbyh.supabase.co';
 const KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJqd3plYnlmaHNm c3pwZ3N3bmJ5aCIsInJvbGUiOiJhbm9uIiwiaWF0IjoxNzg3OTk4Njk4LCJleHAiOjIxMDM1NzQ2OTh9.fh5DvtvMMZn3rPkFnJsVokJJPfJQLZYWGrQsEGrMQbc'.replace(' ','');
 let token='', rows=[];
 function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));}
+async function forgotPassword(){
+ const email=document.getElementById('email').value.trim()||'khalid.elgarh02@gmail.com';
+ const er=document.getElementById('loginError'); er.textContent='';
+ try{
+  const r=await fetch(URL+'/auth/v1/recover',{method:'POST',headers:{apikey:KEY,'Content-Type':'application/json'},body:JSON.stringify({email,redirect_to:location.href})});
+  if(!r.ok) throw Error('تعذر إرسال رسالة إعادة التعيين.');
+  er.style.color='#0b6846'; er.textContent='تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني.';
+ }catch(e){er.style.color='#b42318';er.textContent=e.message}
+}
 async function login(){
  const email=document.getElementById('email').value.trim(), password=document.getElementById('password').value;
  const er=document.getElementById('loginError'); er.textContent='';

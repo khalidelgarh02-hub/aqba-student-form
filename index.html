@@ -111,18 +111,18 @@ const AQBA_SUPABASE_URL = 'https://jwzebyfhsfszpgswnbyh.supabase.co';
 const AQBA_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp3emVieWZoc2ZzenBnc3duYnloIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc5OTg2OTgsImV4cCI6MjEwMzU3NDY5OH0.fh5DvtvMMZn3rPkFnJsVokJJPfJQLZYWGrQsEGrMQbc';
 
 async function sendStudentToDatabase(d) {
-  const response = await fetch(AQBA_SUPABASE_URL + '/functions/v1/register-student', {
-    method: 'POST',
-    headers: {
-      'apikey': AQBA_SUPABASE_ANON_KEY,
-      'Authorization': 'Bearer ' + AQBA_SUPABASE_ANON_KEY,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(d)
-  });
-  const data = await response.json().catch(()=>({}));
-  if(!response.ok) throw new Error(data.error || ('HTTP ' + response.status));
-  return data;
+  const rpc=await fetch(AQBA_SUPABASE_URL+'/rest/v1/rpc/next_aqba_student_number',{method:'POST',headers:{apikey:AQBA_SUPABASE_ANON_KEY,Authorization:'Bearer '+AQBA_SUPABASE_ANON_KEY}});
+  const studentNumber=await rpc.json();
+  if(!rpc.ok || !studentNumber) throw new Error('تعذر إنشاء رقم التلميذ.');
+  const password='AQ-'+crypto.randomUUID().replaceAll('-','').slice(0,10);
+  const email=studentNumber.toLowerCase()+'@students.aqba.local';
+  const signup=await fetch(AQBA_SUPABASE_URL+'/auth/v1/signup',{method:'POST',headers:{apikey:AQBA_SUPABASE_ANON_KEY,'Content-Type':'application/json'},body:JSON.stringify({email,password,data:{role:'student',student_number:studentNumber,full_name:d.fullName}})});
+  const user=await signup.json();
+  if(!signup.ok || !user.user) throw new Error(user.msg||user.error_description||'تعذر إنشاء حساب التلميذ.');
+  const payload={full_name:d.fullName,full_name_fr:d.fullNameFr,birth_date:d.birthDate||null,birth_place:d.birthPlace,address:d.address,class_name:d.className,other_class:d.otherClass,distance:d.distance,travel_time:d.duration,transport:d.transport,father_job:d.fatherJob,mother_job:d.motherJob,current_level:d.currentLevel,old_level:d.oldLevel,siblings:d.siblings,brothers:d.brothers,sisters:d.sisters,favorite_sport:d.sport,other_sport:d.otherSport,represented:d.represented==='نعم'?true:d.represented==='لا'?false:null,competition_name:d.competitionName,competition_level:d.competitionLevel,competition_year:d.competitionYear,competition_sport:d.competitionSport,height:d.height?Number(String(d.height).replace(',','.')):null,weight:d.weight?Number(String(d.weight).replace(',','.')):null,health_status:d.illness,health_details:d.illnessDetails,illness_details:d.illnessDetails,personal_problem:d.personalProblem,signature_student:d.studentSig,signature_teacher:d.teacherSig,photo_data:d.photo,gender:d.gender,raw_data:d,student_number:studentNumber,account_user_id:user.user.id,account_created_at:new Date().toISOString()};
+  const ins=await fetch(AQBA_SUPABASE_URL+'/rest/v1/students',{method:'POST',headers:{apikey:AQBA_SUPABASE_ANON_KEY,Authorization:'Bearer '+(user.access_token||AQBA_SUPABASE_ANON_KEY),'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify(payload)});
+  if(!ins.ok) { try{await fetch(AQBA_SUPABASE_URL+'/auth/v1/logout',{method:'POST',headers:{apikey:AQBA_SUPABASE_ANON_KEY,Authorization:'Bearer '+(user.access_token||'')}})}catch(_){} throw new Error('تم إنشاء الحساب لكن تعذر حفظ الاستمارة.'); }
+  return {ok:true,student_number:studentNumber,password};
 }
 
 </script>
@@ -130,7 +130,17 @@ async function sendStudentToDatabase(d) {
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 <body>
-<div class="container">
+<div id="aqbaStart" style="position:fixed;inset:0;background:#f4f7f8;z-index:9998;display:flex;align-items:center;justify-content:center;padding:18px">
+  <div class="card" style="width:min(520px,100%);text-align:center">
+    <h1 style="color:#0b6846">الجمعية الرياضية للثانوية التأهيلية عقبة بن نافع</h1>
+    <h2>👨‍🎓 فضاء التلميذ</h2>
+    <p class="note">إذا كنت مسجلاً من قبل، أدخل رقمك والقن السري. أما التلميذ الجديد فاختر التسجيل لأول مرة.</p>
+    <button class="primary" style="width:100%;margin-top:10px" onclick="openStudentLogin()">🔐 دخول تلميذ مسجل</button>
+    <button class="secondary" style="width:100%;margin-top:8px" onclick="startNewRegistration()">📝 تسجيل تلميذ جديد</button>
+    <a href="teacher.html" class="light" style="display:block;text-decoration:none;margin-top:8px;padding:10px;border-radius:10px">👨‍🏫 فضاء الأستاذ</a>
+  </div>
+</div>
+<div class="container" id="mainApp" style="display:none">
 
 <div class="card header">
   <div class="official-heading">
@@ -621,7 +631,17 @@ async function makePDF(){
     .student-summary{border-top:1px solid #999;margin-top:7px;padding-top:5px;font-size:10px}
     .footer{position:absolute;bottom:0;right:0;left:0;border-top:1px solid #aaa;padding-top:3px;text-align:center;font-size:8px;color:#555}
     @media print{.page{min-height:279mm}.footer{position:absolute}}
-  </style></head><body>${page1}${page2}
+  </style></head><body>
+<div id="aqbaStart" style="position:fixed;inset:0;background:#f4f7f8;z-index:9998;display:flex;align-items:center;justify-content:center;padding:18px">
+  <div class="card" style="width:min(520px,100%);text-align:center">
+    <h1 style="color:#0b6846">الجمعية الرياضية للثانوية التأهيلية عقبة بن نافع</h1>
+    <h2>👨‍🎓 فضاء التلميذ</h2>
+    <p class="note">إذا كنت مسجلاً من قبل، أدخل رقمك والقن السري. أما التلميذ الجديد فاختر التسجيل لأول مرة.</p>
+    <button class="primary" style="width:100%;margin-top:10px" onclick="openStudentLogin()">🔐 دخول تلميذ مسجل</button>
+    <button class="secondary" style="width:100%;margin-top:8px" onclick="startNewRegistration()">📝 تسجيل تلميذ جديد</button>
+    <a href="teacher.html" class="light" style="display:block;text-decoration:none;margin-top:8px;padding:10px;border-radius:10px">👨‍🏫 فضاء الأستاذ</a>
+  </div>
+</div>${page1}${page2}
 <div id="studentLoginModal" class="login-modal">
   <div class="login-card">
     <h2>👨‍🎓 فضاء التلميذ</h2>
@@ -765,6 +785,8 @@ function escapeHtml(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;',
   }
 })();
 
+
+function startNewRegistration(){document.getElementById('aqbaStart').style.display='none';document.getElementById('mainApp').style.display='block';window.scrollTo(0,0)}
 </script>
 </body>
 </html>
