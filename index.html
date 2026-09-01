@@ -90,6 +90,20 @@ button{border:0;border-radius:10px;padding:12px 18px;font-size:15px;font-weight:
   .document-subtitle{font-size:14px!important}
 }
 
+
+.account-card{border:1px solid #cfe1d8;background:#f7fbf9;border-radius:14px;padding:16px;margin:12px 0}
+.account-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.account-number{font-weight:800;letter-spacing:.5px;color:#0b6846}
+.login-modal{position:fixed;inset:0;background:#0008;display:none;align-items:center;justify-content:center;z-index:10000;padding:18px}
+.login-card{background:#fff;border-radius:18px;width:min(470px,100%);padding:24px;box-shadow:0 20px 60px #0004}
+.login-card h2{text-align:center;color:#0b6846;margin-top:0}
+.login-error{color:#b42318;font-weight:700;text-align:center;margin-top:10px}
+.profile-card{display:none}
+.profile-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.profile-item{border-bottom:1px solid #ddd;padding:6px}
+.profile-item b{display:block;color:#566}
+@media(max-width:700px){.account-grid,.profile-grid{grid-template-columns:1fr}}
+
 </style>
 
 <script>
@@ -97,50 +111,20 @@ const AQBA_SUPABASE_URL = 'https://jwzebyfhsfszpgswnbyh.supabase.co';
 const AQBA_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp3emVieWZoc2ZzenBnc3duYnloIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc5OTg2OTgsImV4cCI6MjEwMzU3NDY5OH0.fh5DvtvMMZn3rPkFnJsVokJJPfJQLZYWGrQsEGrMQbc';
 
 async function sendStudentToDatabase(d) {
-  const payload = {
-    full_name: d.fullName,
-    full_name_fr: d.fullNameFr || null,
-    birth_date: d.birthDate || null,
-    birth_place: d.birthPlace || null,
-    address: d.address || null,
-    class_name: d.className,
-    other_class: d.otherClass || null,
-    distance: d.distance || null,
-    travel_time: d.duration || null,
-    father_job: d.fatherJob || null,
-    mother_job: d.motherJob || null,
-    current_level: d.currentLevel,
-    favorite_sport: d.sport || null,
-    other_sport: d.otherSport || null,
-    represented: d.represented === 'نعم' ? true : (d.represented === 'لا' ? false : null),
-    competition_name: d.competitionName || null,
-    competition_level: d.competitionLevel || null,
-    competition_year: d.competitionYear || null,
-    competition_sport: d.competitionSport || null,
-    height: d.height ? Number(d.height) : null,
-    weight: d.weight ? Number(d.weight) : null,
-    health_status: d.illness || null,
-    personal_problem: d.personalProblem || null,
-    signature_student: d.studentSig || null,
-    raw_data: d
-  };
-
-  const response = await fetch(AQBA_SUPABASE_URL + '/rest/v1/students', {
+  const response = await fetch(AQBA_SUPABASE_URL + '/functions/v1/register-student', {
     method: 'POST',
     headers: {
       'apikey': AQBA_SUPABASE_ANON_KEY,
       'Authorization': 'Bearer ' + AQBA_SUPABASE_ANON_KEY,
-      'Content-Type': 'application/json',
-      'Prefer': 'return=minimal'
+      'Content-Type': 'application/json'
     },
-    body: JSON.stringify(payload)
+    body: JSON.stringify(d)
   });
-  if (!response.ok) {
-    const txt = await response.text();
-    throw new Error(txt || ('HTTP ' + response.status));
-  }
-  return true;
+  const data = await response.json().catch(()=>({}));
+  if(!response.ok) throw new Error(data.error || ('HTTP ' + response.status));
+  return data;
 }
+
 </script>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -158,6 +142,20 @@ async function sendStudentToDatabase(d) {
   <div class="grid" style="margin-top:12px">
     <div class="fixed">الموسم الدراسي: <span id="schoolYear">2026-2027</span></div>
     <div class="fixed">المؤسسة: <span id="schoolName">الثانوية التأهيلية عقبة بن نافع</span></div>
+  </div>
+
+</div>
+
+<div id="accountCard" class="account-card" style="display:none">
+  <h2 class="section-title" style="margin-top:0">🔐 حساب التلميذ</h2>
+  <p class="note">تم إنشاء حسابك بنجاح. احتفظ بهذه المعلومات للدخول إلى فضاء التلميذ.</p>
+  <div class="account-grid">
+    <div class="field"><label>رقم التلميذ</label><input id="studentNumber" class="account-number" readonly></div>
+    <div class="field"><label>كلمة المرور</label><input id="studentPassword" class="account-number" readonly></div>
+  </div>
+  <div class="actions" style="margin-top:10px">
+    <button type="button" class="secondary" onclick="copyCredentials()">📋 نسخ بيانات الدخول</button>
+    <button type="button" class="light" onclick="openStudentLogin()">🔐 دخول فضاء التلميذ</button>
   </div>
 </div>
 
@@ -364,26 +362,7 @@ async function sendStudentToDatabase(d) {
 <div id="status" class="status"></div>
 </form>
 
-<div id="teacherAccess" class="card teacher hidden" aria-hidden="true" style="display:none!important">
-<h2 class="section-title">🔐 وضع الأستاذ — التحكم والتعديل</h2>
-<p class="note">وضع الأستاذ مخفي عن التلميذ. يمكن للأستاذ إظهاره بواسطة الاختصار السري من لوحة المفاتيح.</p>
-<div class="actions">
-<button class="secondary" type="button" onclick="teacherLogin()">دخول وضع الأستاذ</button>
-<button class="light" type="button" onclick="loadSaved()">استرجاع آخر بيانات محفوظة</button>
-</div>
-<div id="teacherPanel" class="hidden" style="margin-top:15px">
-  <div class="teacher-grid">
-    <div class="field"><label>كلمة المرور الجديدة</label><input id="newPass" type="password"></div>
-    <div class="field"><label>إضافة خيار رياضة</label><input id="newSport" placeholder="مثال: تنس الطاولة"></div>
-  </div>
-  <div class="actions" style="margin-top:12px">
-    <button class="primary" type="button" onclick="changePass()">حفظ كلمة المرور</button>
-    <button class="secondary" type="button" onclick="addSport()">إضافة الرياضة إلى القائمة</button>
-  </div>
-</div>
-</div>
 
-<p class="note" style="text-align:center">هذه نسخة إلكترونية محلية تعمل على الهاتف والحاسوب. البيانات تحفظ في المتصفح على نفس الجهاز ما لم يتم تصديرها.</p>
 </div>
 
 <script>
@@ -458,17 +437,21 @@ $('studentForm').addEventListener('submit', async e=>{
  if(signatureEmpty('studentSig')){alert('المرجو توقيع التلميذ يدوياً على شاشة الهاتف.');return}
  const d=collect();
  const status=$('status');
- status.textContent='⏳ جارٍ حفظ الاستمارة في قاعدة البيانات...';
+ status.textContent='⏳ جارٍ إنشاء الحساب وحفظ الاستمارة بشكل آمن...';
  try{
-   await sendStudentToDatabase(d);
+   const result=await sendStudentToDatabase(d);
+   d.studentNumber=result.student_number;
+   d.accountPassword=result.password;
    localStorage.setItem(STORAGE,JSON.stringify(d));
-   status.textContent='✓ تم حفظ الاستمارة بنجاح في قاعدة بيانات المؤسسة.';
-   alert('تم تسجيل الاستمارة بنجاح. يمكنك الآن الضغط على «الحصول على الوثيقة PDF».');
+   $('studentNumber').value=result.student_number;
+   $('studentPassword').value=result.password;
+   $('accountCard').style.display='block';
+   status.textContent='✓ تم التسجيل وإنشاء حساب التلميذ بنجاح.';
+   alert('تم التسجيل بنجاح. رقم التلميذ وكلمة المرور ظاهران أسفل رأس الاستمارة. احتفظ بهما.');
  }catch(err){
    console.error(err);
-   status.textContent='✗ تعذر الاتصال بقاعدة البيانات. تم حفظ نسخة على الجهاز.';
-   localStorage.setItem(STORAGE,JSON.stringify(d));
-   alert('تعذر إرسال البيانات إلى قاعدة البيانات. تم حفظ نسخة على الجهاز. تحقق من الاتصال بالإنترنت ثم حاول «حفظ الاستمارة» مرة أخرى.');
+   status.textContent='✗ تعذر إتمام التسجيل: '+err.message;
+   alert('تعذر إتمام التسجيل. المرجو التأكد من الاتصال بالإنترنت ثم المحاولة مرة أخرى.');
  }
 });
 function loadSaved(){const d=JSON.parse(localStorage.getItem(STORAGE)||'null');if(!d){alert('لا توجد بيانات محفوظة.');return}apply(d);$('status').textContent='تم استرجاع آخر بيانات محفوظة.'}
@@ -638,7 +621,30 @@ async function makePDF(){
     .student-summary{border-top:1px solid #999;margin-top:7px;padding-top:5px;font-size:10px}
     .footer{position:absolute;bottom:0;right:0;left:0;border-top:1px solid #aaa;padding-top:3px;text-align:center;font-size:8px;color:#555}
     @media print{.page{min-height:279mm}.footer{position:absolute}}
-  </style></head><body>${page1}${page2}</body></html>`);
+  </style></head><body>${page1}${page2}
+<div id="studentLoginModal" class="login-modal">
+  <div class="login-card">
+    <h2>👨‍🎓 فضاء التلميذ</h2>
+    <p class="note" style="text-align:center">أدخل رقم التلميذ وكلمة المرور الخاصة بك.</p>
+    <div class="field"><label>رقم التلميذ</label><input id="loginStudentNumber" placeholder="AQBA-2026-0021"></div>
+    <div class="field" style="margin-top:10px"><label>كلمة المرور</label><input id="loginStudentPassword" type="password"></div>
+    <button class="primary" style="width:100%;margin-top:14px" type="button" onclick="studentLogin()">دخول</button>
+    <button class="light" style="width:100%;margin-top:8px" type="button" onclick="closeStudentLogin()">إلغاء</button>
+    <div id="loginError" class="login-error"></div>
+  </div>
+</div>
+
+<div id="studentProfile" class="card profile-card">
+  <h2 class="section-title">👨‍🎓 معلوماتي</h2>
+  <div class="profile-grid" id="profileGrid"></div>
+  <div class="actions" style="margin-top:12px">
+    <button class="secondary" type="button" onclick="loadMyDataIntoForm()">✏️ تعديل معلوماتي</button>
+    <button class="light" type="button" onclick="makePDF()">📄 تحميل PDF</button>
+    <button class="danger" type="button" onclick="studentLogout()">🚪 خروج</button>
+  </div>
+</div>
+
+</body></html>`);
   win.document.close();
 
   // Wait for photo/signatures to load before invoking the native print engine.
@@ -687,6 +693,78 @@ function addSport(){
  const exists=[...$('sport').options].some(o=>o.text===s); if(exists){alert('هذا الخيار موجود مسبقاً.');return}
  const o=document.createElement('option');o.text=s;o.value=s;$('sport').insertBefore(o,$('sport').querySelector('option:last-child'));$('newSport').value='';alert('تمت إضافة الرياضة.');
 }
+
+async function copyCredentials(){
+  const n=$('studentNumber').value, p=$('studentPassword').value;
+  if(!n||!p)return;
+  try{await navigator.clipboard.writeText(`رقم التلميذ: ${n}\nكلمة المرور: ${p}`);alert('تم نسخ بيانات الدخول.')}
+  catch(e){alert(`رقم التلميذ: ${n}\nكلمة المرور: ${p}`)}
+}
+function openStudentLogin(){
+  $('studentLoginModal').style.display='flex';
+  $('loginStudentNumber').focus();
+}
+function closeStudentLogin(){ $('studentLoginModal').style.display='none'; $('loginError').textContent=''; }
+
+async function studentLogin(){
+  const number=$('loginStudentNumber').value.trim().toUpperCase();
+  const password=$('loginStudentPassword').value;
+  $('loginError').textContent='';
+  if(!/^AQBA-2026-\d{4}$/.test(number)){ $('loginError').textContent='رقم التلميذ غير صحيح.'; return; }
+  if(!password){ $('loginError').textContent='أدخل كلمة المرور.'; return; }
+  try{
+    const email=number.toLowerCase()+'@students.aqba.local';
+    const r=await fetch(AQBA_SUPABASE_URL+'/auth/v1/token?grant_type=password',{
+      method:'POST',
+      headers:{apikey:AQBA_SUPABASE_ANON_KEY,'Content-Type':'application/json'},
+      body:JSON.stringify({email,password})
+    });
+    const session=await r.json();
+    if(!r.ok || !session.access_token){ $('loginError').textContent='رقم التلميذ أو كلمة المرور غير صحيحة.'; return; }
+    const p=await fetch(AQBA_SUPABASE_URL+'/rest/v1/students?student_number=eq.'+encodeURIComponent(number)+'&select=*&limit=1',{
+      headers:{apikey:AQBA_SUPABASE_ANON_KEY,Authorization:'Bearer '+session.access_token}
+    });
+    const rows=await p.json();
+    if(!p.ok || !rows.length){ $('loginError').textContent='تعذر العثور على ملف التلميذ.'; return; }
+    sessionStorage.setItem('aqba_student_session',JSON.stringify({access_token:session.access_token,student:rows[0]}));
+    showStudentProfile(rows[0]);
+    closeStudentLogin();
+  }catch(e){ $('loginError').textContent='تعذر الاتصال بقاعدة البيانات.'; }
+}
+function showStudentProfile(s){
+  const items=[
+    ['رقم التلميذ',s.student_number],['الاسم الكامل',s.full_name],['Nom et Prénom',s.full_name_fr],
+    ['تاريخ الازدياد',s.birth_date],['مكان الازدياد',s.birth_place],['القسم',s.class_name],
+    ['المستوى الدراسي',s.current_level],['الرياضة المفضلة',s.favorite_sport==='رياضة أخرى'?s.other_sport:s.favorite_sport],
+    ['المسافة',s.distance],['مدة الوصول',s.travel_time],['وسيلة التنقل',s.transport],
+    ['مهنة الأب',s.father_job],['مهنة الأم',s.mother_job],['عدد الإخوة',s.siblings],
+    ['الطول',s.height],['الوزن',s.weight],['حالة صحية',s.health_status]
+  ];
+  $('profileGrid').innerHTML=items.map(([k,v])=>`<div class="profile-item"><b>${escapeHtml(k)}</b>${escapeHtml(v||'—')}</div>`).join('');
+  $('studentProfile').style.display='block';
+  apply(s.raw_data||s);
+}
+function loadMyDataIntoForm(){
+  const x=JSON.parse(sessionStorage.getItem('aqba_student_session')||'null');
+  if(x?.student?.raw_data) apply(x.student.raw_data);
+  window.scrollTo({top:document.getElementById('studentForm').offsetTop-20,behavior:'smooth'});
+}
+function studentLogout(){
+  sessionStorage.removeItem('aqba_student_session');
+  $('studentProfile').style.display='none';
+  alert('تم تسجيل الخروج.');
+}
+function escapeHtml(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));}
+
+(function restoreAccountUI(){
+  const d=JSON.parse(localStorage.getItem(STORAGE)||'null');
+  if(d?.studentNumber && d?.accountPassword){
+    $('studentNumber').value=d.studentNumber;
+    $('studentPassword').value=d.accountPassword;
+    $('accountCard').style.display='block';
+  }
+})();
+
 </script>
 </body>
 </html>
