@@ -134,6 +134,7 @@ async function sendStudentToDatabase(d) {
 
 </head>
 <body>
+<div id="aqbaVersion" style="position:fixed;bottom:6px;left:8px;z-index:9999;font-size:10px;opacity:.45;direction:ltr">AQBA-V16</div>
 <div id="aqbaStart" style="position:fixed;inset:0;background:#f4f7f8;z-index:9998;display:flex;align-items:center;justify-content:center;padding:18px">
   <div class="card" style="width:min(520px,100%);text-align:center">
     <div class="institution-header" dir="rtl" style="line-height:1.65;margin-bottom:14px">
@@ -643,56 +644,93 @@ async function studentLogin(){
   if(!password){ $('loginError').textContent='أدخل كلمة المرور.'; return; }
   const btn=document.querySelector('#studentLoginModal button.primary');
   if(btn){btn.disabled=true;btn.textContent='⏳ جارٍ التحقق...';}
+
+  const email=number.toLowerCase()+'@students.aqba.local';
+  let edgeWorked=false;
   try{
-    // Primary method: secure Edge Function
-    let r, raw='', result={};
+    // محاولة أولى: Edge Function. بدون AbortController لتفادي خطأ المتصفح
+    // "object ... no longer usable" في بعض البيئات.
     try{
-      const controller=new AbortController();
-      const timer=setTimeout(()=>controller.abort(),12000);
-      r=await fetch(AQBA_SUPABASE_URL+'/functions/v1/student-login',{
-        method:'POST',mode:'cors',cache:'no-store',signal:controller.signal,
-        headers:{apikey:AQBA_SUPABASE_ANON_KEY,'Content-Type':'application/json'},
-        body:JSON.stringify({student_number:number,password})
+      const r=await fetch(AQBA_SUPABASE_URL+'/functions/v1/student-login',{
+        method:'POST',
+        mode:'cors',
+        cache:'no-store',
+        headers:{
+          'apikey':AQBA_SUPABASE_ANON_KEY,
+          'Content-Type':'application/json'
+        },
+        body:JSON.stringify({student_number:number,password:password})
       });
-      clearTimeout(timer);
-      raw=await r.text();
-      try{result=raw?JSON.parse(raw):{};}catch(_){result={};}
-      if(r.ok && result.ok){
-        sessionStorage.setItem('aqba_student_session',JSON.stringify({access_token:result.access_token,student:result.student}));
-        showStudentProfile(result.student); closeStudentLogin(); return;
+      const result=await r.json().catch(()=>({}));
+      if(r.ok && result && result.ok && result.student){
+        sessionStorage.setItem('aqba_student_session',JSON.stringify({
+          access_token:result.access_token,
+          refresh_token:result.refresh_token||null,
+          student:result.student
+        }));
+        edgeWorked=true;
+        showStudentProfile(result.student);
+        closeStudentLogin();
+        return;
       }
-      // HTTP errors from the function are real application errors; do not hide them.
-      if(r.status && r.status!==404 && r.status!==502 && r.status!==503){
-        $('loginError').textContent=result.error||('تعذر تسجيل الدخول (HTTP '+r.status+').'); return;
+      // أخطاء بيانات الدخول من الخدمة لا تحتاج إلى fallback.
+      if(r.status===401 || r.status===404 && result && result.error && !String(result.error).includes('Function')){
+        $('loginError').textContent=(result&&result.error)||'رقم التلميذ أو كلمة المرور غير صحيحة.';
+        return;
       }
     }catch(edgeErr){
-      console.warn('student-login Edge Function unavailable, using fallback:',edgeErr);
+      console.warn('student-login unavailable:',edgeErr);
     }
 
-    // Fallback: Supabase Auth REST endpoint (works even if the Edge Function is unreachable).
+    // الطريقة الاحتياطية: Supabase Auth مباشرة.
     const auth=await fetch(AQBA_SUPABASE_URL+'/auth/v1/token?grant_type=password',{
-      method:'POST',mode:'cors',cache:'no-store',
-      headers:{apikey:AQBA_SUPABASE_ANON_KEY,'Content-Type':'application/json'},
-      body:JSON.stringify({email:number.toLowerCase()+'@students.aqba.local',password})
+      method:'POST',
+      mode:'cors',
+      cache:'no-store',
+      headers:{
+        'apikey':AQBA_SUPABASE_ANON_KEY,
+        'Content-Type':'application/json'
+      },
+      body:JSON.stringify({email:email,password:password})
     });
     const authData=await auth.json().catch(()=>({}));
     if(!auth.ok || !authData.access_token){
       $('loginError').textContent=authData.error_description||authData.msg||'رقم التلميذ أو كلمة المرور غير صحيحة.';
       return;
     }
+
     const p=await fetch(AQBA_SUPABASE_URL+'/rest/v1/students?student_number=eq.'+encodeURIComponent(number)+'&select=*&limit=1',{
-      headers:{apikey:AQBA_SUPABASE_ANON_KEY,Authorization:'Bearer '+authData.access_token}
+      method:'GET',
+      mode:'cors',
+      cache:'no-store',
+      headers:{
+        'apikey':AQBA_SUPABASE_ANON_KEY,
+        'Authorization':'Bearer '+authData.access_token,
+        'Accept':'application/json'
+      }
     });
     const rows=await p.json().catch(()=>[]);
-    if(!p.ok || !rows.length){
-      $('loginError').textContent='تم التحقق من الحساب، لكن تعذر العثور على ملف التلميذ. تحقق من ربط الحساب بملفه.';
+    if(!p.ok){
+      $('loginError').textContent='تم التحقق من الحساب، لكن تعذر الوصول إلى ملف التلميذ (HTTP '+p.status+').';
       return;
     }
-    sessionStorage.setItem('aqba_student_session',JSON.stringify({access_token:authData.access_token,refresh_token:authData.refresh_token,student:rows[0]}));
-    showStudentProfile(rows[0]); closeStudentLogin();
+    if(!Array.isArray(rows) || !rows.length){
+      $('loginError').textContent='تم التحقق من الحساب، لكن لم يتم العثور على ملف بهذا الرقم. تحقق من ربط الحساب بملف التلميذ.';
+      return;
+    }
+
+    sessionStorage.setItem('aqba_student_session',JSON.stringify({
+      access_token:authData.access_token,
+      refresh_token:authData.refresh_token||null,
+      student:rows[0]
+    }));
+    showStudentProfile(rows[0]);
+    closeStudentLogin();
   }catch(e){
     console.error('studentLogin:',e);
-    $('loginError').textContent='تعذر الاتصال بخدمة فضاء التلميذ: '+(e?.message||String(e));
+    let msg='تعذر الاتصال بخدمة فضاء التلميذ.';
+    if(e && e.message) msg+=' '+e.message;
+    $('loginError').textContent=msg;
   }finally{
     if(btn){btn.disabled=false;btn.textContent='دخول';}
   }
