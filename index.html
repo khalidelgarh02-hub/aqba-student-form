@@ -134,7 +134,7 @@ async function sendStudentToDatabase(d) {
 
 </head>
 <body>
-<div id="aqbaVersion" style="position:fixed;bottom:6px;left:8px;z-index:9999;font-size:10px;opacity:.45;direction:ltr">AQBA-V17</div>
+<div id="aqbaVersion" style="position:fixed;bottom:6px;left:8px;z-index:9999;font-size:10px;opacity:.45;direction:ltr">AQBA-V19</div>
 <div id="aqbaStart" style="position:fixed;inset:0;background:#f4f7f8;z-index:9998;display:flex;align-items:center;justify-content:center;padding:18px">
   <div class="card" style="width:min(520px,100%);text-align:center">
     <div class="institution-header" dir="rtl" style="line-height:1.65;margin-bottom:14px">
@@ -488,23 +488,17 @@ function collect(){
  };
 }
 function apply(d){
- if(!d)return;
- // لا يمكن للمتصفح تعيين قيمة input[type=file] برمجياً لأسباب أمنية.
- // لذلك نتجاوز حقل الصورة ونضع الصورة مباشرة في المعاينة.
- const skip=new Set(['photo','studentSig','teacherSig','savedAt','studentNumber','accountPassword']);
- Object.keys(d).forEach(k=>{
-   if(skip.has(k)) return;
-   const el=$(k);
-   if(!el || typeof d[k]==='object') return;
-   if(el.type==='file') return;
-   el.value=d[k] ?? '';
- });
- if(d.represented){const r=document.querySelector('input[name="represented"][value="'+d.represented+'"]');if(r)r.checked=true}
- if(d.illness){const r=document.querySelector('input[name="illness"][value="'+d.illness+'"]');if(r)r.checked=true}
- $('contractAccept').checked=!!d.contractAccept;
- if(d.photo){$('photoPreview').src=d.photo;$('photoPreview').style.display='block';$('photoText').style.display='none'}
- ['studentSig','teacherSig'].forEach(id=>{if(d[id] && d[id].startsWith('data:')){const img=new Image();img.onload=()=>{const c=$(id),ctx=c.getContext('2d');ctx.clearRect(0,0,c.width,c.height);ctx.drawImage(img,0,0,c.width,c.height)};img.src=d[id]}});
- $('sport').dispatchEvent(new Event('change')); $('className').dispatchEvent(new Event('change')); document.querySelector('input[name="represented"]:checked')?.dispatchEvent(new Event('change')); document.querySelector('input[name="illness"]:checked')?.dispatchEvent(new Event('change'));
+ if(!d || typeof d!=='object') return;
+ // لا نعيّن أي قيمة إلى input[type=file]؛ المتصفح يمنع ذلك أمنياً.
+ const allowed=['fullName','fullNameFr','birthDate','birthPlace','address','className','otherClass','distance','duration','transport','fatherJob','motherJob','currentLevel','oldLevel','siblings','brothers','sisters','height','weight','sport','otherSport','competitionName','competitionLevel','competitionYear','competitionSport','illnessDetails','personalProblem'];
+ allowed.forEach(k=>{const el=$(k); if(el && el.type!=='file' && d[k]!==undefined && d[k]!==null) el.value=String(d[k]);});
+ if(d.represented){const r=[...document.querySelectorAll('input[name=represented]')].find(x=>x.value===String(d.represented));if(r)r.checked=true}
+ if(d.illness){const r=[...document.querySelectorAll('input[name=illness]')].find(x=>x.value===String(d.illness));if(r)r.checked=true}
+ const ca=$('contractAccept'); if(ca) ca.checked=!!d.contractAccept;
+ const pi=$('photoPreview'),pt=$('photoText');
+ if(pi && typeof d.photo==='string' && d.photo){pi.src=d.photo;pi.style.display='block';if(pt)pt.style.display='none';}
+ ['studentSig','teacherSig'].forEach(id=>{if(typeof d[id]==='string' && d[id].startsWith('data:')){const img=new Image();img.onload=()=>{const c=$(id);if(!c)return;const ctx=c.getContext('2d');ctx.clearRect(0,0,c.width,c.height);ctx.drawImage(img,0,0,c.width,c.height)};img.src=d[id];}});
+ $('sport')?.dispatchEvent(new Event('change')); $('className')?.dispatchEvent(new Event('change')); document.querySelector('input[name=represented]:checked')?.dispatchEvent(new Event('change')); document.querySelector('input[name=illness]:checked')?.dispatchEvent(new Event('change'));
 }
 $('studentForm').addEventListener('submit', async e=>{
  e.preventDefault();
@@ -716,7 +710,7 @@ async function studentLogin(){
     try{showStudentProfile(p.data[0]);}catch(e){console.error('profile:',e);$('loginError').textContent='تم تسجيل الدخول، لكن تعذر عرض ملف التلميذ: '+(e.message||e);return;}
     closeStudentLogin();
   }catch(e){
-    console.error('studentLogin V17:',e);
+    console.error('studentLogin V19:',e);
     $('loginError').textContent='تعذر الاتصال بخدمة فضاء التلميذ: '+(e&&e.message?e.message:String(e));
   }finally{
     if(btn){btn.disabled=false;btn.textContent='دخول';}
