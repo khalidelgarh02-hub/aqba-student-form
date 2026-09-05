@@ -489,7 +489,16 @@ function collect(){
 }
 function apply(d){
  if(!d)return;
- Object.keys(d).forEach(k=>{if($(k)&&typeof d[k]!=='object') $(k).value=d[k]});
+ // لا يمكن للمتصفح تعيين قيمة input[type=file] برمجياً لأسباب أمنية.
+ // لذلك نتجاوز حقل الصورة ونضع الصورة مباشرة في المعاينة.
+ const skip=new Set(['photo','studentSig','teacherSig','savedAt','studentNumber','accountPassword']);
+ Object.keys(d).forEach(k=>{
+   if(skip.has(k)) return;
+   const el=$(k);
+   if(!el || typeof d[k]==='object') return;
+   if(el.type==='file') return;
+   el.value=d[k] ?? '';
+ });
  if(d.represented){const r=document.querySelector('input[name="represented"][value="'+d.represented+'"]');if(r)r.checked=true}
  if(d.illness){const r=document.querySelector('input[name="illness"][value="'+d.illness+'"]');if(r)r.checked=true}
  $('contractAccept').checked=!!d.contractAccept;
