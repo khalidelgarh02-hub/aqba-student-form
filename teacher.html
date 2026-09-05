@@ -216,7 +216,7 @@ function render(){
     <td>${esc(r.favorite_sport||'—')}</td>
     <td>${r.represented===true?`<span class="badge">${esc(r.competition_name||'مثل المؤسسة')}</span>`:'—'}</td>
     <td>${fmtDate(r.created_at)}</td>
-    <td><button class="blue" onclick="openRow(${JSON.stringify(r.id)})">عرض البيانات</button></td>
+    <td><button class="blue viewBtn" data-id="${esc(r.id)}">عرض البيانات</button></td>
   </tr>`).join('');
 }
 function val(label,value){return `<div class="detail"><strong>${esc(label)}</strong><span>${esc(value??'—')||'—'}</span></div>`}
@@ -274,15 +274,24 @@ function csv(){
   const list=filtered();
   const headers=['الاسم','Nom','القسم','المستوى','الرياضة','المسابقة','الصعيد','السنة','تاريخ التسجيل'];
   const lines=[headers,...list.map(r=>[r.full_name,r.full_name_fr,r.class_name||r.other_class,r.current_level,r.favorite_sport,r.competition_name,r.competition_level,r.competition_year,r.created_at])];
-  const content='\\ufeff'+lines.map(a=>a.map(v=>`"${String(v??'').replaceAll('"','""')}"`).join(',')).join('\\n');
-  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([content],{type:'text/csv;charset=utf-8'}));a.download='تلاميذ_عقبة_بن_نافع_2026-2027.csv';a.click();
+  const content='\ufeff'+lines.map(a=>a.map(v=>`"${String(v??'').replaceAll('"','""')}"`).join(',')).join('\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([content],{type:'text/csv;charset=utf-8'}));a.download='تلاميذ_عقبة_بن_نافع_2026-2027.csv';document.body.appendChild(a); a.click(); a.remove();
   setTimeout(()=>URL.revokeObjectURL(a.href),1000);
 }
-$('loginBtn').onclick=login;$('logoutBtn').onclick=logout;$('refreshBtn').onclick=loadRows;$('csvBtn').onclick=csv;
-$('closeBtn').onclick=()=>$('modal').classList.add('hidden');$('printBtn').onclick=printCurrent;
-$('prevBtn').onclick=()=>{if(page>1){page--;render()}};$('nextBtn').onclick=()=>{page++;render()};
+$('loginBtn').onclick=login;
+$('logoutBtn').onclick=logout;
+$('refreshBtn').onclick=loadRows;
+$('csvBtn').onclick=csv;
+$('closeBtn').onclick=()=>$('modal').classList.add('hidden');
+$('printBtn').onclick=printCurrent;
+$('prevBtn').onclick=()=>{if(page>1){page--;render()}};
+$('nextBtn').onclick=()=>{const pages=Math.max(1,Math.ceil(filtered().length/PAGE_SIZE));if(page<pages){page++;render()}};
 ['search','classFilter','sportFilter','representedFilter'].forEach(id=>$(id).addEventListener('input',()=>{page=1;render()}));
 $('password').addEventListener('keydown',e=>{if(e.key==='Enter')login()});
+$('tbody').addEventListener('click',e=>{
+  const btn=e.target.closest('.viewBtn');
+  if(btn) openRow(btn.dataset.id);
+});
 $('modal').addEventListener('click',e=>{if(e.target.id==='modal')$('modal').classList.add('hidden')});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')$('modal').classList.add('hidden')});
 boot();
