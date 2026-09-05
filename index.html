@@ -596,7 +596,8 @@ async function makePDF(){
     @media print{html,body{background:#fff!important}.page{margin:0!important}}
   `;
   w.document.open();
-  w.document.write('<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>AQBA_2026_2027_'+String(d.fullName||'Student').replace(/[^\u0600-\u06FFa-zA-Z0-9_-]+/g,'_')+'.pdf</title><style>'+printCss+'</style></head><body>'+page1+page2+'</body></html>');
+  w.document.write('<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>AQBA_2026_2027_'+String(d.fullName||'Student').replace(/[^\u0600-\u06FFa-zA-Z0-9_-]+/g,'_')+'.pdf</title><style>'+printCss+'</style></head><body>'+page1+page2+'<script>document.addEventListener('DOMContentLoaded',restoreStudentSession);</script>
+</body></html>');
   w.document.close();
   const waitImages=()=>{
     const imgs=[...w.document.images];
@@ -683,7 +684,7 @@ async function studentLogin(){
         try{
           sessionStorage.setItem('aqba_student_session',JSON.stringify({access_token:r.data.access_token,refresh_token:r.data.refresh_token||null,student:r.data.student}));
         }catch(e){console.warn('sessionStorage:',e);}
-        try{showStudentProfile(r.data.student);}catch(e){console.error('profile:',e);$('loginError').textContent='تم تسجيل الدخول، لكن تعذر عرض ملف التلميذ: '+(e.message||e);return;}
+        try{showStudentProfile(r.data.student); showAppAfterStudentLogin();}catch(e){console.error('profile:',e);$('loginError').textContent='تم تسجيل الدخول، لكن تعذر عرض ملف التلميذ: '+(e.message||e);return;}
         closeStudentLogin();
         return;
       }
@@ -707,7 +708,7 @@ async function studentLogin(){
     if(!p.ok){$('loginError').textContent='تم التحقق من الحساب، لكن تعذر الوصول إلى ملف التلميذ (HTTP '+p.status+').';return;}
     if(!Array.isArray(p.data)||!p.data.length){$('loginError').textContent='تم التحقق من الحساب، لكن لم يتم العثور على ملف بهذا الرقم. تحقق من ربط الحساب بملف التلميذ.';return;}
     try{sessionStorage.setItem('aqba_student_session',JSON.stringify({access_token:auth.data.access_token,refresh_token:auth.data.refresh_token||null,student:p.data[0]}));}catch(e){console.warn('sessionStorage:',e);}
-    try{showStudentProfile(p.data[0]);}catch(e){console.error('profile:',e);$('loginError').textContent='تم تسجيل الدخول، لكن تعذر عرض ملف التلميذ: '+(e.message||e);return;}
+    try{showStudentProfile(p.data[0]); showAppAfterStudentLogin();}catch(e){console.error('profile:',e);$('loginError').textContent='تم تسجيل الدخول، لكن تعذر عرض ملف التلميذ: '+(e.message||e);return;}
     closeStudentLogin();
   }catch(e){
     console.error('studentLogin V19:',e);
@@ -715,6 +716,16 @@ async function studentLogin(){
   }finally{
     if(btn){btn.disabled=false;btn.textContent='دخول';}
   }
+}
+
+function showAppAfterStudentLogin(){
+  const landing=document.getElementById('aqbaStart');
+  const app=document.getElementById('mainApp');
+  if(landing) landing.style.display='none';
+  if(app) app.style.display='block';
+  const profile=document.getElementById('studentProfile');
+  if(profile) profile.style.display='block';
+  setTimeout(()=>{ if(profile) profile.scrollIntoView({behavior:'smooth',block:'start'}); },50);
 }
 
 function showStudentProfile(s){
@@ -751,6 +762,16 @@ function escapeHtml(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;',
   }
 })();
 
+
+function restoreStudentSession(){
+  try{
+    const x=JSON.parse(sessionStorage.getItem('aqba_student_session')||'null');
+    if(x && x.student){
+      showStudentProfile(x.student);
+      showAppAfterStudentLogin();
+    }
+  }catch(e){ console.warn('restoreStudentSession:',e); }
+}
 
 function startNewRegistration(){document.getElementById('aqbaStart').style.display='none';document.getElementById('mainApp').style.display='block';window.scrollTo(0,0)}
 
@@ -855,5 +876,6 @@ document.addEventListener('change',e=>{if(e.target.closest && e.target.closest('
   </div>
 </div>
 
+<script>document.addEventListener('DOMContentLoaded',restoreStudentSession);</script>
 </body>
 </html>
