@@ -3,128 +3,198 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>فضاء الأستاذ — الجمعية الرياضية لعقبة بن نافع</title>
+<title>بوابة الأستاذ — عقبة بن نافع</title>
 <style>
-body{margin:0;background:#f4f7f8;color:#17202a;font-family:"Noto Sans Arabic","Segoe UI",Tahoma,Arial,sans-serif}
-.container{max-width:1250px;margin:28px auto;padding:0 16px}
-.card{background:#fff;border:1px solid #e1e7eb;border-radius:16px;padding:20px;box-shadow:0 8px 24px #0000000a;margin-bottom:16px}
-h1,h2{color:#0b6846}.center{text-align:center}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-input,select{width:100%;padding:11px;border:1px solid #ccd5db;border-radius:10px;box-sizing:border-box;font:inherit}
-button{border:0;border-radius:10px;padding:10px 15px;cursor:pointer;font:inherit}.primary{background:#0b6846;color:white}.light{background:#eef2f4}.danger{background:#b42318;color:white}
-.actions{display:flex;gap:8px;flex-wrap:wrap}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.stat{background:#f7faf8;border:1px solid #dce8e1;border-radius:12px;padding:12px;text-align:center}.stat b{display:block;font-size:24px;color:#0b6846}
-.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse}th,td{padding:9px;border-bottom:1px solid #e5e8eb;text-align:right;white-space:nowrap}th{background:#f2f5f6}
-.modal{position:fixed;inset:0;background:#0008;display:none;align-items:center;justify-content:center;padding:18px}.modal-card{background:#fff;border-radius:16px;width:min(800px,100%);max-height:90vh;overflow:auto;padding:20px}.details{display:grid;grid-template-columns:1fr 1fr;gap:6px}.details div{border-bottom:1px solid #ddd;padding:7px}.details b{display:block;color:#59666f}
-.error{color:#b42318;font-weight:700;text-align:center;margin-top:10px}
-@media(max-width:700px){.grid,.details{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}}
+*{box-sizing:border-box}body{margin:0;background:#f4f6f8;color:#18212b;font-family:Tahoma,Arial,sans-serif}
+.wrap{max-width:1250px;margin:auto;padding:18px}.card{background:#fff;border:1px solid #e1e7eb;border-radius:16px;box-shadow:0 4px 18px #0000000c;padding:18px;margin-bottom:16px}
+h1,h2,h3{margin-top:0}.brand{border-top:5px solid #0b7a4b}.brandgrid{display:grid;grid-template-columns:1fr 2fr 1fr;gap:12px;align-items:center}.logo{height:75px;width:100%;object-fit:contain}.center{text-align:center}.center h1{font-size:25px;color:#c92323;margin:4px}.center h2{font-size:18px;color:#1171bd;margin:4px}.center h3{font-size:17px;color:#126b46;margin:4px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.stat{padding:14px;background:#f7fafc;border:1px solid #e1e7eb;border-radius:12px}.stat b{display:block;font-size:25px;color:#0b7a4b}.toolbar{display:grid;grid-template-columns:2fr 1fr 1fr auto auto;gap:10px;align-items:end}label{font-weight:700;display:block;margin-bottom:5px}input,select{width:100%;padding:10px;border:1px solid #cbd3da;border-radius:9px;font-size:14px}button{border:0;border-radius:9px;padding:10px 14px;font-weight:700;cursor:pointer}.primary{background:#0b7a4b;color:#fff}.blue{background:#1976b9;color:#fff}.light{background:#e9eef2}.red{background:#b52a2a;color:#fff}
+.tablewrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:900px}th,td{padding:9px;border-bottom:1px solid #e7ebee;text-align:right;vertical-align:top}th{background:#f5f8fa}.badge{padding:3px 8px;border-radius:20px;background:#eaf6ef;color:#17683e;font-size:12px}.muted{color:#66727d;font-size:13px}.login{max-width:480px;margin:7vh auto}.hidden{display:none!important}.error{color:#b52a2a;font-weight:700}.success{color:#17683e;font-weight:700}.modal{position:fixed;inset:0;background:#0008;display:flex;align-items:center;justify-content:center;padding:15px;z-index:50}.modalbox{background:#fff;max-width:900px;width:100%;max-height:90vh;overflow:auto;border-radius:16px;padding:18px}.detailgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.detail{border:1px solid #e2e7ea;border-radius:8px;padding:8px}.detail strong{display:block;font-size:12px;color:#65717b}.detail span{font-size:14px;white-space:pre-wrap}.report{font-family:Tahoma,Arial,sans-serif;direction:rtl;background:#fff;color:#111;padding:8mm;width:194mm}.report h1{text-align:center;color:#c92323;font-size:20px}.report .rgrid{display:grid;grid-template-columns:1fr 1fr;gap:5px}.report .r{border:1px solid #bbb;padding:5px;font-size:10px}.report img{max-width:120px;max-height:100px;object-fit:contain}.actions{display:flex;gap:8px;flex-wrap:wrap}@media(max-width:800px){.brandgrid,.grid,.toolbar,.detailgrid{grid-template-columns:1fr}.logo{height:60px}}
+@media print{.no-print{display:none!important}.report{display:block!important;width:194mm;margin:auto}.modal{position:static;background:#fff;padding:0}.modalbox{box-shadow:none;max-width:none;max-height:none}.modalbox>*:not(.print-area){display:none!important}}
 </style>
 </head>
 <body>
-<div class="container">
-<div id="loginCard" class="card" style="max-width:470px;margin:70px auto">
-  <h1 class="center">👨‍🏫 فضاء الأستاذ</h1>
-  <p class="center">الثانوية التأهيلية عقبة بن نافع — الجمعية الرياضية</p>
-  <div class="field"><label>البريد الإلكتروني</label><input id="email" type="email"></div>
-  <div class="field" style="margin-top:10px"><label>كلمة المرور</label><input id="password" type="password"></div>
-  <button class="primary" style="width:100%;margin-top:14px" onclick="login()">دخول</button><button class="light" style="width:100%;margin-top:8px" onclick="forgotPassword()">نسيت كلمة المرور؟</button>
-  <div id="loginError" class="error"></div>
+<div id="loginView" class="login card">
+  <div class="center">
+    <h1>بوابة الأستاذ</h1>
+    <h3>الثانوية التأهيلية عقبة بن نافع</h3>
+    <p class="muted">تسجيل الدخول للوصول إلى بيانات التلاميذ المحفوظة في Supabase.</p>
+  </div>
+  <label>البريد الإلكتروني</label><input id="email" type="email" autocomplete="username" required>
+  <label style="margin-top:10px">كلمة المرور</label><input id="password" type="password" autocomplete="current-password" required>
+  <button id="loginBtn" class="primary" style="width:100%;margin-top:14px">دخول</button>
+  <div id="loginMsg" class="muted" style="margin-top:10px"></div>
 </div>
 
-<div id="dashboard" style="display:none">
-  <div class="card">
-    <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap">
-      <div><h1 style="margin:0">👨‍🏫 لوحة الأستاذ</h1><div>متابعة وإدارة تسجيلات التلاميذ</div></div>
-      <div class="actions"><button class="light" onclick="downloadCSV()">📥 Excel / CSV</button><button class="danger" onclick="logout()">🚪 خروج</button></div>
+<div id="app" class="wrap hidden">
+  <div class="card brand">
+    <div class="brandgrid">
+      <div></div>
+      <div class="center"><h1>بوابة الأستاذ</h1><h2>لوحة تدبير استمارات التلاميذ</h2><h3>الثانوية التأهيلية عقبة بن نافع — 2026-2027</h3></div>
+      <div></div>
     </div>
   </div>
-  <div class="stats">
-    <div class="stat"><b id="total">0</b>إجمالي التلاميذ</div>
-    <div class="stat"><b id="male">0</b>ذكور</div>
-    <div class="stat"><b id="female">0</b>إناث</div>
-    <div class="stat"><b id="sports">0</b>رياضات مختلفة</div>
+
+  <div class="grid">
+    <div class="stat">عدد الاستمارات<b id="total">0</b></div>
+    <div class="stat">المملوءة اليوم<b id="today">0</b></div>
+    <div class="stat">عدد الأقسام<b id="classes">0</b></div>
+    <div class="stat">الممثلون في مسابقات<b id="represented">0</b></div>
   </div>
+
   <div class="card">
-    <div class="grid">
-      <div><label>بحث بالاسم أو رقم التلميذ</label><input id="search" oninput="render()"></div>
-      <div><label>القسم</label><select id="classFilter" onchange="render()"><option value="">جميع الأقسام</option></select></div>
+    <div class="toolbar">
+      <div><label>بحث</label><input id="search" placeholder="الاسم، الاسم بالفرنسية، القسم، الرياضة..."></div>
+      <div><label>القسم</label><select id="classFilter"><option value="">كل الأقسام</option></select></div>
+      <div><label>الرياضة</label><select id="sportFilter"><option value="">كل الرياضات</option></select></div>
+      <button class="blue" id="refreshBtn">تحديث</button>
+      <button class="light" id="csvBtn">تصدير CSV</button>
+    </div>
+    <div class="actions" style="margin-top:12px"><button class="red" id="logoutBtn">تسجيل الخروج</button></div>
+  </div>
+
+  <div class="card">
+    <h2>قائمة التلاميذ</h2>
+    <div id="tableMsg" class="muted"></div>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>الاسم</th><th>القسم</th><th>المستوى</th><th>الرياضة المفضلة</th><th>المسابقة</th><th>تاريخ التسجيل</th><th>إجراء</th></tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
     </div>
   </div>
-  <div class="card table-wrap">
-    <table><thead><tr><th>رقم التلميذ</th><th>الاسم</th><th>القسم</th><th>المستوى</th><th>الرياضة</th><th>التاريخ</th><th></th></tr></thead>
-    <tbody id="tbody"></tbody></table>
+</div>
+
+<div id="modal" class="modal hidden">
+  <div class="modalbox">
+    <div class="actions no-print">
+      <button class="primary" id="printBtn">طباعة / حفظ PDF</button>
+      <button class="light" id="closeBtn">إغلاق</button>
+    </div>
+    <div id="detail" class="print-area"></div>
   </div>
 </div>
-</div>
 
-<div id="modal" class="modal">
- <div class="modal-card">
-  <h2 id="modalTitle"></h2>
-  <div id="details" class="details"></div>
-  <div class="actions" style="margin-top:14px"><button class="light" onclick="closeModal()">إغلاق</button></div>
- </div>
-</div>
-
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script>
-const URL='https://jwzebyfhsfszpgswnbyh.supabase.co';
-const KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJqd3plYnlmaHNm c3pwZ3N3bmJ5aCIsInJvbGUiOiJhbm9uIiwiaWF0IjoxNzg3OTk4Njk4LCJleHAiOjIxMDM1NzQ2OTh9.fh5DvtvMMZn3rPkFnJsVokJJPfJQLZYWGrQsEGrMQbc'.replace(' ','');
-let token='', rows=[];
-function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));}
-async function forgotPassword(){
- const email=document.getElementById('email').value.trim()||'khalid.elgarh02@gmail.com';
- const er=document.getElementById('loginError'); er.textContent='';
- try{
-  const r=await fetch(URL+'/auth/v1/recover',{method:'POST',headers:{apikey:KEY,'Content-Type':'application/json'},body:JSON.stringify({email,redirect_to:location.href})});
-  if(!r.ok) throw Error('تعذر إرسال رسالة إعادة التعيين.');
-  er.style.color='#0b6846'; er.textContent='تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني.';
- }catch(e){er.style.color='#b42318';er.textContent=e.message}
+const SUPABASE_URL='https://jwzebyfhsfszpgswnbyh.supabase.co';
+const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp3emVieWZoc2ZzenBnc3duYnloIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc5OTg2OTgsImV4cCI6MjEwMzU3NDY5OH0.fh5DvtvMMZn3rPkFnJsVokJJPfJQLZYWGrQsEGrMQbc';
+const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+let rows=[], current=null;
+
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+const fmtDate=s=>s?new Date(s).toLocaleString('fr-FR'):'—';
+
+async function boot(){
+  const {data:{session}}=await sb.auth.getSession();
+  if(session) showApp(); else $('loginView').classList.remove('hidden');
 }
 async function login(){
- const email=document.getElementById('email').value.trim(), password=document.getElementById('password').value;
- const er=document.getElementById('loginError'); er.textContent='';
- try{
-  const r=await fetch(URL+'/auth/v1/token?grant_type=password',{method:'POST',headers:{apikey:KEY,'Content-Type':'application/json'},body:JSON.stringify({email,password})});
-  const s=await r.json(); if(!r.ok||!s.access_token)throw Error('بيانات الدخول غير صحيحة.');
-  token=s.access_token; sessionStorage.setItem('aqba_teacher_token',token);
-  await load();
- }catch(e){er.textContent=e.message||'تعذر تسجيل الدخول.'}
+  $('loginMsg').textContent='جارٍ تسجيل الدخول...';
+  const {error}=await sb.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});
+  if(error){$('loginMsg').className='error';$('loginMsg').textContent='تعذر الدخول: '+error.message;return}
+  showApp();
 }
-async function load(){
- const r=await fetch(URL+'/rest/v1/students?select=*&order=created_at.desc',{headers:{apikey:KEY,Authorization:'Bearer '+token}});
- const data=await r.json(); if(!r.ok)throw Error('ليس لديك صلاحية الوصول إلى بيانات التلاميذ.');
- rows=data; document.getElementById('loginCard').style.display='none'; document.getElementById('dashboard').style.display='block'; render();
+async function logout(){await sb.auth.signOut();location.reload()}
+function showApp(){$('loginView').classList.add('hidden');$('app').classList.remove('hidden');loadRows()}
+async function loadRows(){
+  $('tableMsg').textContent='جارٍ تحميل البيانات...';
+  const {data,error}=await sb.from('students').select('*').order('created_at',{ascending:false}).limit(5000);
+  if(error){$('tableMsg').className='error';$('tableMsg').textContent='خطأ: '+error.message;return}
+  rows=data||[]; buildFilters(); render();
+}
+function buildFilters(){
+  const classes=[...new Set(rows.map(r=>r.class_name).filter(Boolean))].sort();
+  const sports=[...new Set(rows.map(r=>r.favorite_sport).filter(Boolean))].sort();
+  $('classFilter').innerHTML='<option value="">كل الأقسام</option>'+classes.map(x=>`<option>${esc(x)}</option>`).join('');
+  $('sportFilter').innerHTML='<option value="">كل الرياضات</option>'+sports.map(x=>`<option>${esc(x)}</option>`).join('');
+  $('total').textContent=rows.length;
+  const d=new Date();const key=d.toISOString().slice(0,10);
+  $('today').textContent=rows.filter(r=>(r.created_at||'').slice(0,10)===key).length;
+  $('classes').textContent=classes.length;
+  $('represented').textContent=rows.filter(r=>r.represented===true).length;
+}
+function filtered(){
+  const q=$('search').value.trim().toLowerCase(), c=$('classFilter').value, s=$('sportFilter').value;
+  return rows.filter(r=>{
+    const hay=[r.full_name,r.full_name_fr,r.class_name,r.current_level,r.favorite_sport,r.competition_name,r.competition_sport].join(' ').toLowerCase();
+    return (!q||hay.includes(q))&&(!c||r.class_name===c)&&(!s||r.favorite_sport===s);
+  });
 }
 function render(){
- const q=document.getElementById('search').value.toLowerCase(), c=document.getElementById('classFilter').value;
- const filtered=rows.filter(x=>(!q||String(x.full_name||'').toLowerCase().includes(q)||String(x.student_number||'').toLowerCase().includes(q))&&(!c||x.class_name===c));
- document.getElementById('tbody').innerHTML=filtered.map((x,i)=>`<tr><td>${esc(x.student_number)}</td><td>${esc(x.full_name)}</td><td>${esc(x.class_name)}</td><td>${esc(x.current_level)}</td><td>${esc(x.favorite_sport==='رياضة أخرى'?x.other_sport:x.favorite_sport)}</td><td>${esc((x.created_at||'').slice(0,10))}</td><td><button class="light" onclick="view(${rows.indexOf(x)})">عرض</button></td></tr>`).join('')||'<tr><td colspan="7">لا توجد نتائج.</td></tr>';
- document.getElementById('total').textContent=rows.length;
- document.getElementById('male').textContent=rows.filter(x=>x.gender==='ذكر').length;
- document.getElementById('female').textContent=rows.filter(x=>x.gender==='أنثى').length;
- document.getElementById('sports').textContent=new Set(rows.map(x=>x.favorite_sport||x.other_sport).filter(Boolean)).size;
- const sel=document.getElementById('classFilter'), old=c;
- sel.innerHTML='<option value="">جميع الأقسام</option>'+[...new Set(rows.map(x=>x.class_name).filter(Boolean))].sort().map(x=>`<option>${esc(x)}</option>`).join('');
- sel.value=old;
+  const list=filtered();
+  $('tableMsg').textContent=`عرض ${list.length} من ${rows.length} سجل`;
+  $('tbody').innerHTML=list.map(r=>`<tr>
+    <td><b>${esc(r.full_name)}</b><div class="muted">${esc(r.full_name_fr||'')}</div></td>
+    <td>${esc(r.class_name||r.other_class||'—')}</td>
+    <td>${esc(r.current_level||'—')}</td>
+    <td>${esc(r.favorite_sport||'—')}</td>
+    <td>${r.represented?`<span class="badge">${esc(r.competition_name||'نعم')}</span>`:'—'}</td>
+    <td>${fmtDate(r.created_at)}</td>
+    <td><button class="blue" onclick="openRow('${r.id}')">عرض</button></td>
+  </tr>`).join('');
 }
-function view(i){
- const x=rows[i]; document.getElementById('modalTitle').textContent=`${x.full_name||''} — ${x.student_number||''}`;
- const fields=[
- ['الاسم الكامل',x.full_name],['Nom et Prénom',x.full_name_fr],['تاريخ الازدياد',x.birth_date],['مكان الازدياد',x.birth_place],
- ['العنوان',x.address],['القسم',x.class_name],['المستوى',x.current_level],['المستوى السابق',x.old_level],
- ['المسافة',x.distance],['مدة الوصول',x.travel_time],['وسيلة التنقل',x.transport],['مهنة الأب',x.father_job],['مهنة الأم',x.mother_job],
- ['عدد الإخوة',x.siblings],['الذكور',x.brothers],['الإناث',x.sisters],['الطول',x.height],['الوزن',x.weight],
- ['الرياضة',x.favorite_sport==='رياضة أخرى'?x.other_sport:x.favorite_sport],['تمثيل المؤسسة',x.represented?'نعم':x.represented===false?'لا':'—'],
- ['المسابقة',x.competition_name],['المستوى',x.competition_level],['السنة',x.competition_year],['الرياضة في المسابقة',x.competition_sport],
- ['الحالة الصحية',x.health_status],['تفاصيل صحية',x.illness_details],['المشكل الشخصي',x.personal_problem]
- ];
- document.getElementById('details').innerHTML=fields.map(([a,b])=>`<div><b>${esc(a)}</b>${esc(b||'—')}</div>`).join('');
- document.getElementById('modal').style.display='flex';
+function val(label,value){return `<div class="detail"><strong>${esc(label)}</strong><span>${esc(value||'—')}</span></div>`}
+function openRow(id){
+  current=rows.find(r=>r.id===id); if(!current)return;
+  const d=current.raw_data||{};
+  $('detail').innerHTML=`<div class="report">
+    <h1>الورقة الشخصية للتلميذ</h1>
+    <div style="text-align:center;font-size:12px">الثانوية التأهيلية عقبة بن نافع — الموسم الدراسي 2026-2027</div>
+    <hr>
+    ${d.photo?`<div style="text-align:center"><img src="${d.photo}" alt="الصورة"></div>`:''}
+    <div class="rgrid">
+      ${val('الاسم الكامل',current.full_name)}
+      ${val('Nom et Prénom',current.full_name_fr)}
+      ${val('تاريخ الازدياد',current.birth_date)}
+      ${val('مكان الازدياد',current.birth_place)}
+      ${val('العنوان',current.address)}
+      ${val('القسم',current.class_name||current.other_class)}
+      ${val('المسافة',current.distance)}
+      ${val('مدة التنقل',current.travel_time)}
+      ${val('وسيلة التنقل',d.transport)}
+      ${val('مهنة الأب',current.father_job)}
+      ${val('مهنة الأم',current.mother_job)}
+      ${val('المستوى الحالي',current.current_level)}
+      ${val('المستوى القديم',d.oldLevel)}
+      ${val('عدد الإخوة',d.siblings)}
+      ${val('الذكور',d.brothers)}
+      ${val('الإناث',d.sisters)}
+      ${val('الطول',current.height?current.height+' cm':'—')}
+      ${val('الوزن',current.weight?current.weight+' kg':'—')}
+      ${val('الرياضة المفضلة',current.favorite_sport||d.sport)}
+      ${val('مثل المؤسسة؟',current.represented===true?'نعم':current.represented===false?'لا':'—')}
+      ${val('اسم المسابقة',current.competition_name)}
+      ${val('الصعيد',current.competition_level)}
+      ${val('السنة/الموسم',current.competition_year)}
+      ${val('رياضة المسابقة',current.competition_sport)}
+      ${val('الحالة الصحية',current.health_status)}
+      ${val('المشكل الشخصي',current.personal_problem)}
+    </div>
+    ${d.illnessDetails?`<div class="r" style="margin-top:6px"><b>تفاصيل الحالة الصحية:</b><br>${esc(d.illnessDetails)}</div>`:''}
+    <div style="margin-top:10px;font-size:9px">تاريخ التسجيل: ${esc(fmtDate(current.created_at))}</div>
+  </div>`;
+  $('modal').classList.remove('hidden');
 }
-function closeModal(){document.getElementById('modal').style.display='none'}
-function downloadCSV(){
- const cols=['student_number','full_name','full_name_fr','birth_date','birth_place','address','class_name','current_level','old_level','distance','travel_time','transport','father_job','mother_job','siblings','brothers','sisters','favorite_sport','represented','competition_name','competition_level','competition_year','competition_sport','height','weight','health_status','illness_details','personal_problem','created_at'];
- const csv=[cols.join(','),...rows.map(x=>cols.map(k=>`"${String(x[k]??'').replace(/"/g,'""')}"`).join(','))].join('\\n');
- const blob=new Blob(['\\ufeff'+csv],{type:'text/csv;charset=utf-8'}), a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='AQBA_Liste_Eleves_2026-2027.csv';a.click();
+async function printCurrent(){
+  if(!current)return;
+  const area=$('detail').innerHTML;
+  const holder=document.createElement('div');holder.style.position='fixed';holder.style.left='-10000px';holder.style.top='0';holder.style.background='#fff';holder.innerHTML=area;document.body.appendChild(holder);
+  try{await html2pdf().set({margin:7,filename:`استمارة_${current.full_name||'تلميذ'}.pdf`,image:{type:'jpeg',quality:.98},html2canvas:{scale:2,useCORS:true,allowTaint:true,backgroundColor:'#fff'},jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},pagebreak:{mode:['css','legacy']}}).from(holder).save()}
+  finally{holder.remove()}
 }
-function logout(){sessionStorage.removeItem('aqba_teacher_token');location.reload()}
-(async()=>{const t=sessionStorage.getItem('aqba_teacher_token');if(t){token=t;try{await load()}catch(e){sessionStorage.removeItem('aqba_teacher_token')}}})();
+function csv(){
+  const list=filtered(), headers=['الاسم','Nom','القسم','المستوى','الرياضة','المسابقة','الصعيد','السنة','تاريخ التسجيل'];
+  const lines=[headers,...list.map(r=>[r.full_name,r.full_name_fr,r.class_name,r.current_level,r.favorite_sport,r.competition_name,r.competition_level,r.competition_year,r.created_at])];
+  const csv='\\ufeff'+lines.map(a=>a.map(v=>`"${String(v??'').replaceAll('"','""')}"`).join(',')).join('\\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download='تلاميذ_عقبة_بن_نافع_2026-2027.csv';a.click();
+}
+$('loginBtn').onclick=login;$('logoutBtn').onclick=logout;$('refreshBtn').onclick=loadRows;$('csvBtn').onclick=csv;$('closeBtn').onclick=()=>$('modal').classList.add('hidden');$('printBtn').onclick=printCurrent;
+['search','classFilter','sportFilter'].forEach(id=>$(id).addEventListener('input',render));
+$('password').addEventListener('keydown',e=>{if(e.key==='Enter')login()});
+boot();
 </script>
-</body></html>
+</body>
+</html>
