@@ -105,7 +105,8 @@ body{background:#fff}.no-print{display:none!important}.report{display:block!impo
       <div><label>الرياضة</label><select id="sportFilter"><option value="">كل الرياضات</option></select></div>
       <div><label>التمثيل</label><select id="representedFilter"><option value="">الكل</option><option value="yes">مثل المؤسسة</option><option value="no">لم يمثل</option></select></div>
       <button class="blue" id="refreshBtn">تحديث</button>
-      <button class="light" id="csvBtn">تصدير CSV</button>
+      <button class="primary" id="excelBtn">تصدير Excel</button>
+<button class="light" id="csvBtn">تصدير CSV</button>
     </div>
     <div class="actions" style="margin-top:12px">
       <button class="red" id="logoutBtn">تسجيل الخروج</button>
@@ -146,6 +147,7 @@ body{background:#fff}.no-print{display:none!important}.report{display:block!impo
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
 const SUPABASE_URL='https://jwzebyfhsfszpgswnbyh.supabase.co';
 const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp3emVieWZoc2ZzenBnc3duYnloIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc5OTg2OTgsImV4cCI6MjEwMzU3NDY5OH0.fh5DvtvMMZn3rPkFnJsVokJJPfJQLZYWGrQsEGrMQbc';
@@ -256,31 +258,180 @@ function openRow(id){
   $('modal').classList.remove('hidden');
 }
 async function printCurrent(){
-  if(!current)return;
-  const holder=document.createElement('div');
-  holder.style.position='fixed';holder.style.left='-10000px';holder.style.top='0';holder.style.background='#fff';
-  holder.innerHTML=$('detail').innerHTML;document.body.appendChild(holder);
-  try{
-    await html2pdf().set({
-      margin:5,filename:`استمارة_${(current.full_name||'تلميذ').replace(/[\\/:*?"<>|]/g,'_')}.pdf`,
-      image:{type:'jpeg',quality:.98},
-      html2canvas:{scale:2,useCORS:true,allowTaint:true,backgroundColor:'#fff'},
-      jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},
-      pagebreak:{mode:['css','legacy']}
-    }).from(holder).save();
-  }finally{holder.remove()}
+  if(!current) return;
+
+  const report = $('detail').querySelector('.report');
+  if(!report) return;
+
+  const printWindow = window.open('', '_blank', 'width=900,height=1000');
+  if(!printWindow){
+    alert('يرجى السماح بالنوافذ المنبثقة من أجل الطباعة أو حفظ PDF.');
+    return;
+  }
+
+  const styles = [...document.querySelectorAll('style')]
+    .map(s => s.textContent).join('\n');
+
+  printWindow.document.open();
+  printWindow.document.write(`<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>استمارة_${esc(current.full_name||'تلميذ')}</title>
+<style>
+${styles}
+html,body{background:#fff!important;margin:0;padding:0}
+body{font-family:Tahoma,Arial,sans-serif}
+.report{display:block!important;visibility:visible!important;width:194mm!important;margin:auto!important;padding:6mm!important;background:#fff!important}
+@page{size:A4 portrait;margin:8mm}
+@media print{
+  .no-print{display:none!important}
+  .report{width:194mm!important;margin:auto!important}
 }
+</style>
+</head>
+<body>
+${report.outerHTML}
+<script>
+window.onload=function(){
+  setTimeout(function(){
+    window.focus();
+    window.print();
+  },500);
+};
+<\/script>
+</body>
+</html>`);
+  printWindow.document.close();
+}
+
+function cleanExportValue(value){
+  if(value===null || value===undefined) return '';
+  if(typeof value==='object'){
+    try{return JSON.stringify(value);}
+    catch(e){return '';}
+  }
+  return String(value);
+}
+
+function flattenStudent(r){
+  const d = (r && typeof r.raw_data === 'object' && r.raw_data) ? r.raw_data : {};
+  const out = {};
+
+  // Main database fields with Arabic Excel headings.
+  const fields = [
+    ['رقم السجل', r.id],
+    ['الاسم الكامل', r.full_name],
+    ['الاسم بالفرنسية', r.full_name_fr],
+    ['رقم التلميذ', r.student_number || r.student_no || r.registration_number],
+    ['تاريخ الازدياد', r.birth_date],
+    ['مكان الازدياد', r.birth_place],
+    ['العنوان', r.address],
+    ['القسم', r.class_name || r.other_class],
+    ['المستوى الحالي', r.current_level],
+    ['المستوى السابق', d.oldLevel],
+    ['المسافة', r.distance],
+    ['مدة التنقل', r.travel_time],
+    ['وسيلة التنقل', d.transport],
+    ['مهنة الأب', r.father_job],
+    ['مهنة الأم', r.mother_job],
+    ['عدد الإخوة', d.siblings],
+    ['عدد الإخوة الذكور', d.brothers],
+    ['عدد الأخوات الإناث', d.sisters],
+    ['الطول (cm)', r.height],
+    ['الوزن (kg)', r.weight],
+    ['الرياضة المفضلة', r.favorite_sport || d.sport],
+    ['مثل المؤسسة', r.represented===true ? 'نعم' : r.represented===false ? 'لا' : ''],
+    ['اسم المسابقة', r.competition_name],
+    ['رياضة المسابقة', r.competition_sport],
+    ['مستوى المسابقة', r.competition_level],
+    ['سنة/موسم المسابقة', r.competition_year],
+    ['الحالة الصحية', r.health_status],
+    ['تفاصيل الحالة الصحية', d.illnessDetails],
+    ['المشكل الشخصي', r.personal_problem],
+    ['تاريخ التسجيل', r.created_at]
+  ];
+
+  for(const [k,v] of fields) out[k]=cleanExportValue(v);
+
+  // Include additional non-sensitive raw form fields.
+  const excluded = new Set([
+    'photo','photo_data','signature_student','signature_parent',
+    'password','account_password','account_password_hash',
+    'auth_user_id','account_user_id','email','token','access_token',
+    'refresh_token'
+  ]);
+  for(const [k,v] of Object.entries(d)){
+    if(excluded.has(k)) continue;
+    if(k in out) continue;
+    if(typeof v === 'string' && v.length > 5000) continue;
+    out[k]=cleanExportValue(v);
+  }
+  return out;
+}
+
+function exportExcel(){
+  const list = filtered();
+  if(!list.length){
+    alert('لا توجد معطيات مطابقة للتصفية الحالية.');
+    return;
+  }
+
+  if(typeof XLSX === 'undefined'){
+    alert('مكتبة Excel لم يتم تحميلها. تحقق من الاتصال بالإنترنت ثم أعد المحاولة.');
+    return;
+  }
+
+  const data = list.map(flattenStudent);
+  const ws = XLSX.utils.json_to_sheet(data);
+
+  // RTL + useful widths.
+  ws['!cols'] = Object.keys(data[0]).map((k,i)=>({
+    wch: Math.min(45, Math.max(14, String(k).length + 5))
+  }));
+  ws['!autofilter'] = {ref: ws['!ref']};
+
+  const stats = [
+    ['تقرير بوابة الأستاذ — الثانوية التأهيلية عقبة بن نافع', ''],
+    ['الموسم الدراسي', '2026-2027'],
+    ['عدد السجلات المصدرة', list.length],
+    ['تاريخ التصدير', new Date().toLocaleString('fr-FR')],
+    ['التصفية', $('search').value.trim() || 'بدون بحث'],
+    ['القسم', $('classFilter').value || 'كل الأقسام'],
+    ['الرياضة', $('sportFilter').value || 'كل الرياضات'],
+    ['التمثيل', $('representedFilter').value==='yes' ? 'مثل المؤسسة' :
+                 $('representedFilter').value==='no' ? 'لم يمثل' : 'الكل']
+  ];
+  const wsStats = XLSX.utils.aoa_to_sheet(stats);
+  wsStats['!cols']=[{wch:28},{wch:55}];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'التلاميذ');
+  XLSX.utils.book_append_sheet(wb, wsStats, 'الإحصائيات');
+
+  const stamp = new Date().toISOString().slice(0,10);
+  XLSX.writeFile(wb, `تلاميذ_عقبة_بن_نافع_${stamp}.xlsx`);
+}
+
 function csv(){
   const list=filtered();
-  const headers=['الاسم','Nom','القسم','المستوى','الرياضة','المسابقة','الصعيد','السنة','تاريخ التسجيل'];
-  const lines=[headers,...list.map(r=>[r.full_name,r.full_name_fr,r.class_name||r.other_class,r.current_level,r.favorite_sport,r.competition_name,r.competition_level,r.competition_year,r.created_at])];
+  if(!list.length){ alert('لا توجد معطيات للتصدير.'); return; }
+  const data=list.map(flattenStudent);
+  const headers=Object.keys(data[0]);
+  const lines=[headers,...data.map(r=>headers.map(h=>r[h]))];
   const content='\ufeff'+lines.map(a=>a.map(v=>`"${String(v??'').replaceAll('"','""')}"`).join(',')).join('\n');
-  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([content],{type:'text/csv;charset=utf-8'}));a.download='تلاميذ_عقبة_بن_نافع_2026-2027.csv';document.body.appendChild(a); a.click(); a.remove();
-  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  const url=URL.createObjectURL(new Blob([content],{type:'text/csv;charset=utf-8'}));
+  const a=document.createElement('a');
+  a.href=url;
+  a.download='تلاميذ_عقبة_بن_نافع_2026-2027.csv';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
+
 $('loginBtn').onclick=login;
 $('logoutBtn').onclick=logout;
 $('refreshBtn').onclick=loadRows;
+$('excelBtn').onclick=exportExcel;
 $('csvBtn').onclick=csv;
 $('closeBtn').onclick=()=>$('modal').classList.add('hidden');
 $('printBtn').onclick=printCurrent;
