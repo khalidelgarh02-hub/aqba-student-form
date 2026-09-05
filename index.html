@@ -37,7 +37,10 @@ textarea{min-height:90px;resize:vertical}
 .contract li{margin-bottom:9px}
 .signature-area{display:grid;grid-template-columns:1fr 1fr;gap:20px}
 .sigbox{border:1px solid #cbd3da;border-radius:12px;padding:10px;background:#fff}
-canvas{width:100%;height:180px;border:1px dashed #9ba6b0;border-radius:8px;touch-action:none;background:#fff}
+canvas{display:block;width:100%;height:180px;border:1px dashed #9ba6b0;border-radius:8px;touch-action:none;background:#fff;cursor:crosshair;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.sigbox{position:relative}
+.sigbox canvas{position:relative;z-index:2}
+.sig-hint{font-size:12px;color:#68737d;text-align:center;margin:5px 0 0}
 .actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
 button{border:0;border-radius:10px;padding:12px 18px;font-size:15px;font-weight:700;cursor:pointer}
 .primary{background:#0b7a4b;color:#fff}.secondary{background:#1976b9;color:#fff}.danger{background:#b52a2a;color:#fff}.light{background:#e9eef2;color:#17212b}
@@ -80,13 +83,17 @@ button{border:0;border-radius:10px;padding:12px 18px;font-size:15px;font-weight:
 .official-heading{text-align:center;line-height:1.55;padding:8px 4px 12px;font-weight:800}
 .official-heading>div:first-child{font-size:20px}
 .official-heading>div:nth-child(2){font-size:18px}
-.official-heading>div:nth-child(3){font-size:17px;color:#0b6846}
+.official-heading>div:nth-child(3){font-size:16px}
+.official-heading>div:nth-child(4){font-size:16px}
+.official-heading .institution-line{font-size:17px;color:#0b6846}
 .document-subtitle{font-size:20px!important;margin-top:7px;color:#18212b;border-top:1px solid #d7dde2;padding-top:7px}
 #pdfButton{min-width:230px}
 @media print{
   .official-heading>div:first-child{font-size:15px}
   .official-heading>div:nth-child(2){font-size:13px}
-  .official-heading>div:nth-child(3){font-size:12.5px}
+  .official-heading>div:nth-child(3){font-size:11.5px}
+  .official-heading>div:nth-child(4){font-size:11.5px}
+  .official-heading .institution-line{font-size:12px}
   .document-subtitle{font-size:14px!important}
 }
 
@@ -111,33 +118,36 @@ const AQBA_SUPABASE_URL = 'https://jwzebyfhsfszpgswnbyh.supabase.co';
 const AQBA_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp3emVieWZoc2ZzenBnc3duYnloIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc5OTg2OTgsImV4cCI6MjEwMzU3NDY5OH0.fh5DvtvMMZn3rPkFnJsVokJJPfJQLZYWGrQsEGrMQbc';
 
 async function sendStudentToDatabase(d) {
-  const rpc=await fetch(AQBA_SUPABASE_URL+'/rest/v1/rpc/next_aqba_student_number',{method:'POST',headers:{apikey:AQBA_SUPABASE_ANON_KEY,Authorization:'Bearer '+AQBA_SUPABASE_ANON_KEY}});
-  const studentNumber=await rpc.json();
-  if(!rpc.ok || !studentNumber) throw new Error('تعذر إنشاء رقم التلميذ.');
-  const password='AQ-'+crypto.randomUUID().replaceAll('-','').slice(0,10);
-  const email=studentNumber.toLowerCase()+'@students.aqba.local';
-  const signup=await fetch(AQBA_SUPABASE_URL+'/auth/v1/signup',{method:'POST',headers:{apikey:AQBA_SUPABASE_ANON_KEY,'Content-Type':'application/json'},body:JSON.stringify({email,password,data:{role:'student',student_number:studentNumber,full_name:d.fullName}})});
-  const user=await signup.json();
-  if(!signup.ok || !user.user) throw new Error(user.msg||user.error_description||'تعذر إنشاء حساب التلميذ.');
-  const payload={full_name:d.fullName,full_name_fr:d.fullNameFr,birth_date:d.birthDate||null,birth_place:d.birthPlace,address:d.address,class_name:d.className,other_class:d.otherClass,distance:d.distance,travel_time:d.duration,transport:d.transport,father_job:d.fatherJob,mother_job:d.motherJob,current_level:d.currentLevel,old_level:d.oldLevel,siblings:d.siblings,brothers:d.brothers,sisters:d.sisters,favorite_sport:d.sport,other_sport:d.otherSport,represented:d.represented==='نعم'?true:d.represented==='لا'?false:null,competition_name:d.competitionName,competition_level:d.competitionLevel,competition_year:d.competitionYear,competition_sport:d.competitionSport,height:d.height?Number(String(d.height).replace(',','.')):null,weight:d.weight?Number(String(d.weight).replace(',','.')):null,health_status:d.illness,health_details:d.illnessDetails,illness_details:d.illnessDetails,personal_problem:d.personalProblem,signature_student:d.studentSig,signature_teacher:d.teacherSig,photo_data:d.photo,gender:d.gender,raw_data:d,student_number:studentNumber,account_user_id:user.user.id,account_created_at:new Date().toISOString()};
-  const ins=await fetch(AQBA_SUPABASE_URL+'/rest/v1/students',{method:'POST',headers:{apikey:AQBA_SUPABASE_ANON_KEY,Authorization:'Bearer '+(user.access_token||AQBA_SUPABASE_ANON_KEY),'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify(payload)});
-  if(!ins.ok) { try{await fetch(AQBA_SUPABASE_URL+'/auth/v1/logout',{method:'POST',headers:{apikey:AQBA_SUPABASE_ANON_KEY,Authorization:'Bearer '+(user.access_token||'')}})}catch(_){} throw new Error('تم إنشاء الحساب لكن تعذر حفظ الاستمارة.'); }
-  return {ok:true,student_number:studentNumber,password};
+  const fn=AQBA_SUPABASE_URL+'/functions/v1/register-student';
+  const r=await fetch(fn,{method:'POST',headers:{apikey:AQBA_SUPABASE_ANON_KEY,Authorization:'Bearer '+AQBA_SUPABASE_ANON_KEY,'Content-Type':'application/json'},body:JSON.stringify(d)});
+  let result=null; try{result=await r.json()}catch(_){ }
+  if(!r.ok || !result?.ok){
+    const msg=result?.error||result?.message||'';
+    if(/rate limit|email rate limit/i.test(msg)) throw new Error('تم تجاوز حد إرسال البريد في Supabase. هذه النسخة الجديدة لا تعتمد على إرسال بريد إلكتروني للتسجيل؛ إذا ظهرت الرسالة، فالنسخة القديمة ما زالت منشورة على GitHub Pages.');
+    throw new Error(msg||'تعذر حفظ الاستمارة.');
+  }
+  return result;
 }
 
 </script>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
 </head>
 <body>
 <div id="aqbaStart" style="position:fixed;inset:0;background:#f4f7f8;z-index:9998;display:flex;align-items:center;justify-content:center;padding:18px">
   <div class="card" style="width:min(520px,100%);text-align:center">
+    <div class="institution-header" dir="rtl" style="line-height:1.65;margin-bottom:14px">
+      <div style="font-weight:800;font-size:18px">المملكة المغربية</div>
+      <div style="font-weight:700;font-size:16px">وزارة التربية الوطنية والتعليم الأولي والرياضة</div>
+      <div style="font-weight:700;font-size:15px">الأكاديمية الجهوية للتربية والتكوين لجهة سوس ماسة</div>
+      <div style="font-weight:700;font-size:15px">المديرية الإقليمية اشتوكة أيت باها</div>
+    </div>
     <h1 style="color:#0b6846">الجمعية الرياضية للثانوية التأهيلية عقبة بن نافع</h1>
     <h2>👨‍🎓 فضاء التلميذ</h2>
     <p class="note">إذا كنت مسجلاً من قبل، أدخل رقمك والقن السري. أما التلميذ الجديد فاختر التسجيل لأول مرة.</p>
-    <button class="primary" style="width:100%;margin-top:10px" onclick="openStudentLogin()">🔐 دخول تلميذ مسجل</button>
-    <button class="secondary" style="width:100%;margin-top:8px" onclick="startNewRegistration()">📝 تسجيل تلميذ جديد</button>
-    <a href="teacher.html" class="light" style="display:block;text-decoration:none;margin-top:8px;padding:10px;border-radius:10px">👨‍🏫 فضاء الأستاذ</a>
+    <button id="btnStudentLogin" type="button" class="primary" style="width:100%;margin-top:10px">🔐 دخول التلميذ المسجل</button>
+    <button id="btnNewRegistration" type="button" class="secondary" style="width:100%;margin-top:8px">📝 تسجيل تلميذ جديد</button>
+    <a href="teacher-dashboard.html" class="light" style="display:block;text-decoration:none;margin-top:8px;padding:10px;border-radius:10px">👨‍🏫 فضاء الأستاذ</a>
   </div>
 </div>
 <div class="container" id="mainApp" style="display:none">
@@ -146,7 +156,9 @@ async function sendStudentToDatabase(d) {
   <div class="official-heading">
     <div>المملكة المغربية</div>
     <div>وزارة التربية الوطنية والتعليم الأولي والرياضة</div>
-    <div>الجمعية الرياضية للثانوية التأهيلية عقبة بن نافع</div>
+    <div>الأكاديمية الجهوية للتربية والتكوين لجهة سوس ماسة</div>
+    <div>المديرية الإقليمية اشتوكة أيت باها</div>
+    <div class="institution-line">الجمعية الرياضية للثانوية التأهيلية عقبة بن نافع</div>
     <div class="document-subtitle">الورقة الشخصية للتلميذ — الموسم الدراسي 2026-2027</div>
   </div>
   <div class="grid" style="margin-top:12px">
@@ -350,22 +362,23 @@ async function sendStudentToDatabase(d) {
 </div>
 
 <h2 class="section-title" style="margin-top:25px">7. التوقيع الإلكتروني</h2>
+<div class="note" style="text-align:center;margin-bottom:8px">✍️ ارسم توقيعك داخل المربع بإصبعك أو بالماوس.</div>
 <div class="signature-area">
   <div class="sigbox">
     <strong>إمضاء التلميذ</strong>
-    <canvas id="studentSig"></canvas>
+    <canvas id="studentSig" width="900" height="300" aria-label="مكان توقيع التلميذ"></canvas><div class="sig-hint">✍️ ارسم توقيعك داخل المربع بإصبعك أو بالماوس</div>
     <div class="actions"><button type="button" class="light" onclick="clearSig('studentSig')">مسح التوقيع</button></div>
   </div>
   <div class="sigbox">
     <strong>إمضاء الأستاذ المؤطر</strong>
-    <canvas id="teacherSig"></canvas>
+    <canvas id="teacherSig" width="900" height="300" aria-label="مكان توقيع الأستاذ"></canvas><div class="sig-hint">✍️ توقيع الأستاذ المؤطر</div>
     <div class="actions"><button type="button" class="light" onclick="clearSig('teacherSig')">مسح التوقيع</button></div>
   </div>
 </div>
 
 <div class="actions" style="margin-top:22px">
   <button class="primary" type="submit">حفظ الاستمارة</button>
-  <button class="secondary" type="button" onclick="makePDF()">📄 إنشاء / حفظ الوثيقة PDF</button>
+  <button class="secondary" type="button" onclick="makePDF()">📄 إنشاء PDF — صفحتان A4</button>
   <button class="light" type="button" onclick="exportData()">تصدير بيانات الاستمارة</button>
   <button class="danger" type="button" onclick="resetForm()">مسح البيانات</button>
 </div>
@@ -387,28 +400,70 @@ document.querySelectorAll('input[name="represented"]').forEach(x=>x.addEventList
 document.querySelectorAll('input[name="illness"]').forEach(x=>x.addEventListener('change',()=> $('illnessWrap').classList.toggle('hidden',x.value!=='نعم' || !x.checked)));
 
 $('photo').addEventListener('change',e=>{
- const f=e.target.files[0]; if(!f)return;
- const r=new FileReader(); r.onload=()=>{$('photoPreview').src=r.result;$('photoPreview').style.display='block';$('photoText').style.display='none';}; r.readAsDataURL(f);
+ const f=e.target.files && e.target.files[0];
+ if(!f)return;
+ if(!f.type.startsWith('image/')){alert('المرجو اختيار ملف صورة فقط.');e.target.value='';return;}
+ if(f.size>5*1024*1024){alert('الصورة كبيرة جداً. المرجو اختيار صورة لا تتجاوز 5 MB.');e.target.value='';return;}
+ const r=new FileReader();
+ r.onload=()=>{
+   $('photoPreview').src=r.result;
+   $('photoPreview').style.display='block';
+   $('photoText').style.display='none';
+ };
+ r.onerror=()=>alert('تعذر قراءة الصورة. حاول اختيار صورة أخرى.');
+ r.readAsDataURL(f);
 });
 
 function setupCanvas(id){
- const c=$(id), ctx=c.getContext('2d'); let drawing=false, last=null;
- function resize(){
-   const ratio=window.devicePixelRatio||1, rect=c.getBoundingClientRect();
-   c.width=rect.width*ratio; c.height=rect.height*ratio; ctx.scale(ratio,ratio);
-   ctx.lineWidth=2;ctx.lineCap='round';ctx.lineJoin='round';
- }
- resize(); window.addEventListener('resize',resize);
- function pos(e){const r=c.getBoundingClientRect();const p=e.touches?e.touches[0]:e;return {x:p.clientX-r.left,y:p.clientY-r.top}}
- function start(e){e.preventDefault();drawing=true;last=pos(e)}
- function move(e){if(!drawing)return;e.preventDefault();let p=pos(e);ctx.beginPath();ctx.moveTo(last.x,last.y);ctx.lineTo(p.x,p.y);ctx.stroke();last=p}
- function end(){drawing=false}
- c.addEventListener('mousedown',start);c.addEventListener('mousemove',move);window.addEventListener('mouseup',end);
- c.addEventListener('touchstart',start,{passive:false});c.addEventListener('touchmove',move,{passive:false});window.addEventListener('touchend',end);
+  const c=$(id); if(!c) return;
+  const ctx=c.getContext('2d',{alpha:true,willReadFrequently:true});
+  let drawing=false, last=null;
+  let cssW=0, cssH=0;
+  function resize(preserve=true){
+    const rect=c.getBoundingClientRect();
+    cssW=Math.max(260,Math.round(rect.width||c.parentElement.clientWidth||300));
+    cssH=Math.max(120,Math.round(rect.height||180));
+    const ratio=Math.max(1,window.devicePixelRatio||1);
+    let old=null;
+    if(preserve && c.width>0 && c.height>0){try{old=c.toDataURL('image/png')}catch(_){}
+    }
+    c.width=Math.round(cssW*ratio); c.height=Math.round(cssH*ratio);
+    c.style.width='100%'; c.style.height=cssH+'px';
+    ctx.setTransform(ratio,0,0,ratio,0,0);
+    ctx.lineWidth=2.4; ctx.lineCap='round'; ctx.lineJoin='round'; ctx.strokeStyle='#111';
+    if(old && old!=='data:,'){
+      const img=new Image(); img.onload=()=>ctx.drawImage(img,0,0,cssW,cssH); img.src=old;
+    }
+  }
+  function point(e){const r=c.getBoundingClientRect();return {x:e.clientX-r.left,y:e.clientY-r.top};}
+  function start(e){
+    if(e.pointerType==='mouse' && e.button!==0)return;
+    e.preventDefault(); e.stopPropagation(); drawing=true; last=point(e);
+    try{c.setPointerCapture(e.pointerId)}catch(_){}
+    ctx.beginPath(); ctx.arc(last.x,last.y,1.2,0,Math.PI*2); ctx.fillStyle='#111'; ctx.fill();
+  }
+  function move(e){
+    if(!drawing)return;
+    e.preventDefault(); e.stopPropagation();
+    const p=point(e); ctx.beginPath(); ctx.moveTo(last.x,last.y); ctx.lineTo(p.x,p.y); ctx.stroke(); last=p;
+  }
+  function end(e){if(!drawing)return; drawing=false; last=null; try{c.releasePointerCapture(e.pointerId)}catch(_){} }
+  c.addEventListener('pointerdown',start,{passive:false});
+  c.addEventListener('pointermove',move,{passive:false});
+  c.addEventListener('pointerup',end,{passive:false});
+  c.addEventListener('pointercancel',end,{passive:false});
+  c.addEventListener('lostpointercapture',()=>{drawing=false;last=null});
+  resize(false);
+  let rt; window.addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(()=>resize(true),150)});
 }
 setupCanvas('studentSig'); setupCanvas('teacherSig');
 
-function clearSig(id){const c=$(id),ctx=c.getContext('2d');ctx.clearRect(0,0,c.width,c.height)}
+function clearSig(id){
+ const c=$(id); if(!c)return; const ctx=c.getContext('2d');
+ const ratio=Math.max(1,window.devicePixelRatio||1);
+ ctx.setTransform(1,0,0,1,0,0); ctx.clearRect(0,0,c.width,c.height);
+ ctx.setTransform(ratio,0,0,ratio,0,0); ctx.lineWidth=2.4;ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle='#111';
+}
 function signatureEmpty(id){
  const c=$(id),ctx=c.getContext('2d'); const d=ctx.getImageData(0,0,c.width,c.height).data;
  for(let i=3;i<d.length;i+=4) if(d[i]>0) return false; return true;
@@ -447,7 +502,7 @@ $('studentForm').addEventListener('submit', async e=>{
  if(signatureEmpty('studentSig')){alert('المرجو توقيع التلميذ يدوياً على شاشة الهاتف.');return}
  const d=collect();
  const status=$('status');
- status.textContent='⏳ جارٍ إنشاء الحساب وحفظ الاستمارة بشكل آمن...';
+ status.textContent='⏳ جارٍ حفظ الاستمارة وإنشاء حساب التلميذ...';
  try{
    const result=await sendStudentToDatabase(d);
    d.studentNumber=result.student_number;
@@ -461,7 +516,7 @@ $('studentForm').addEventListener('submit', async e=>{
  }catch(err){
    console.error(err);
    status.textContent='✗ تعذر إتمام التسجيل: '+err.message;
-   alert('تعذر إتمام التسجيل. المرجو التأكد من الاتصال بالإنترنت ثم المحاولة مرة أخرى.');
+   alert('تعذر إتمام التسجيل. '+(err.message||'المرجو التأكد من الاتصال بالإنترنت ثم المحاولة مرة أخرى.'));
  }
 });
 function loadSaved(){const d=JSON.parse(localStorage.getItem(STORAGE)||'null');if(!d){alert('لا توجد بيانات محفوظة.');return}apply(d);$('status').textContent='تم استرجاع آخر بيانات محفوظة.'}
@@ -469,22 +524,15 @@ function loadSaved(){const d=JSON.parse(localStorage.getItem(STORAGE)||'null');i
 async function makePDF(){
   const form=$('studentForm');
   if(!form.checkValidity()){form.reportValidity();return}
-  if(signatureEmpty('studentSig')){
-    alert('المرجو توقيع التلميذ قبل إنشاء الوثيقة.');
-    return;
-  }
-
+  if(signatureEmpty('studentSig')){alert('المرجو توقيع التلميذ قبل إنشاء الوثيقة.');return}
   const d=collect();
   localStorage.setItem(STORAGE,JSON.stringify(d));
-
   const esc=s=>String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   const v=s=>esc(s||'—');
   const radio=(name)=>getRadio(name)||'—';
-
   const photo=d.photo ? `<img class="photo" src="${d.photo}" alt="الصورة الشخصية">` : `<div class="photo empty">الصورة الشخصية</div>`;
   const sigStudent=d.studentSig ? `<img class="sig" src="${d.studentSig}" alt="توقيع التلميذ">` : '';
   const sigTeacher=d.teacherSig ? `<img class="sig" src="${d.teacherSig}" alt="توقيع الأستاذ المؤطر">` : '';
-
   const contract=[
     'يتكون فضاء التربية البدنية من الملاعب الرياضية وحلبات الجري والمساحة المحيطة بها ومستودعات الملابس وهو فصل دراسي كباقي الفصول الدراسية بالمؤسسة.',
     'الالتزام بالآداب العامة وسلوك الاحترام يعبر عن الصورة الإيجابية للتلميذ والتلميذة، لذلك فكل تجاوز في هذا الباب يعتبر إخلالا فادحا بهذا التعاقد وبالقانون الداخلي للمؤسسة ويعرض مرتكبه للإجراءات التأديبية اللازمة.',
@@ -500,206 +548,67 @@ async function makePDF(){
     'كل حصص التربية البدنية خاضعة للتنقيط وكل سلوك إيجابي أو سلبي يؤثر بشكل مباشر في النقطة النهائية للحلقة الدراسية.',
     'كل تجاوز أو إخلال بالقوانين المذكورة في هذا التعاقد يتعرض مرتكبه إلى الإجراءات التأديبية اللازمة ويبقى للأستاذ وللإدارة السلطة التقديرية لنوع هذه العقوبات والإجراءات.'
   ];
-
-  const page1=`
-    <section class="page">
-      <header class="head">
-        <div>المملكة المغربية</div>
-        <div>وزارة التربية الوطنية والتعليم الأولي والرياضة</div>
-        <div>الجمعية الرياضية للثانوية التأهيلية عقبة بن نافع</div>
-        <h1>الورقة الشخصية للتلميذ</h1>
-        <div class="year">الموسم الدراسي: 2026-2027</div>
-      </header>
-
-      <div class="section-title">1. المعلومات الشخصية</div>
-      <div class="personal">
-        <div class="photo-wrap">${photo}</div>
-        <div class="fields">
-          <div class="item"><b>الاسم الكامل:</b><span>${v(d.fullName)}</span></div>
-          <div class="item"><b>Nom et Prénom:</b><span>${v(d.fullNameFr)}</span></div>
-          <div class="item"><b>تاريخ الازدياد:</b><span>${v(d.birthDate)}</span></div>
-          <div class="item"><b>مكان الازدياد:</b><span>${v(d.birthPlace)}</span></div>
-          <div class="item wide"><b>العنوان الشخصي:</b><span>${v(d.address)}</span></div>
-          <div class="item"><b>القسم:</b><span>${v(d.className==='قسم آخر'?d.otherClass:d.className)}</span></div>
-        </div>
-      </div>
-
-      <div class="section-title">2. التنقل والأسرة والدراسة</div>
-      <div class="data-grid">
-        <div class="item"><b>المسافة بين المؤسسة والمنزل:</b><span>${v(d.distance)}</span></div>
-        <div class="item"><b>المدة الزمنية للوصول:</b><span>${v(d.duration)}</span></div>
-        <div class="item"><b>وسيلة التنقل:</b><span>${v(d.transport)}</span></div>
-        <div class="item"><b>مهنة الأب:</b><span>${v(d.fatherJob)}</span></div>
-        <div class="item"><b>مهنة الأم:</b><span>${v(d.motherJob)}</span></div>
-        <div class="item"><b>المستوى الدراسي الحالي:</b><span>${v(d.currentLevel)}</span></div>
-        <div class="item"><b>المستوى الدراسي القديم:</b><span>${v(d.oldLevel)}</span></div>
-        <div class="item"><b>عدد الإخوة:</b><span>${v(d.siblings)}</span></div>
-        <div class="item"><b>عدد الذكور:</b><span>${v(d.brothers)}</span></div>
-        <div class="item"><b>عدد الإناث:</b><span>${v(d.sisters)}</span></div>
-        <div class="item"><b>الطول:</b><span>${v(d.height)} cm</span></div>
-        <div class="item"><b>الوزن:</b><span>${v(d.weight)} kg</span></div>
-      </div>
-
-      <div class="section-title">3. الرياضة المفضلة</div>
-      <div class="single-line"><b>الرياضة المفضلة:</b> ${v(d.sport==='رياضة أخرى'?d.otherSport:d.sport)}</div>
-
-      <div class="section-title">4. تمثيل المؤسسة في المسابقات الخارجية</div>
-      <div class="single-line"><b>سبق له تمثيل المؤسسة:</b> ${v(radio('represented'))}</div>
-      <div class="data-grid compact">
-        <div class="item"><b>اسم المسابقة:</b><span>${v(d.competitionName)}</span></div>
-        <div class="item"><b>على صعيد:</b><span>${v(d.competitionLevel)}</span></div>
-        <div class="item"><b>السنة / الموسم:</b><span>${v(d.competitionYear)}</span></div>
-        <div class="item"><b>الرياضة:</b><span>${v(d.competitionSport)}</span></div>
-      </div>
-
-      <div class="section-title">5. معلومات صحية وشخصية</div>
-      <div class="single-line"><b>هل يعاني من مرض:</b> ${v(radio('illness'))}</div>
-      <div class="text-box"><b>تفاصيل المرض والأدوية:</b><br>${v(d.illnessDetails)}</div>
-      <div class="text-box"><b>مشكل شخصي:</b><br>${v(d.personalProblem)}</div>
-
-      <div class="footer">الثانوية التأهيلية عقبة بن نافع — الورقة الشخصية للتلميذ</div>
-    </section>`;
-
-  const page2=`
-    <section class="page page2">
-      <header class="head small-head">
-        <div>المملكة المغربية</div>
-        <div>وزارة التربية الوطنية والتعليم الأولي والرياضة</div>
-        <div>الجمعية الرياضية للثانوية التأهيلية عقبة بن نافع</div>
-        <h1>التعاقد البيداغوجي والتوقيعات</h1>
-      </header>
-
-      <div class="section-title">6. التعاقد البيداغوجي لمادة التربية البدنية والرياضية</div>
-      <ol class="contract-list">${contract.map(x=>`<li>${esc(x)}</li>`).join('')}</ol>
-      <div class="accept">☑ أقر أنني اطلعت على بنود التعاقد البيداغوجي وألتزم باحترامها.</div>
-
-      <div class="section-title">7. التوقيع الإلكتروني</div>
-      <div class="signatures">
-        <div class="signature">
-          <b>إمضاء التلميذ</b>
-          <div class="sig-area">${sigStudent}</div>
-        </div>
-        <div class="signature">
-          <b>إمضاء الأستاذ المؤطر</b>
-          <div class="sig-area">${sigTeacher}</div>
-        </div>
-      </div>
-
-      <div class="student-summary">
-        <b>التلميذ(ة):</b> ${v(d.fullName)}
-        &nbsp;&nbsp; | &nbsp;&nbsp;
-        <b>القسم:</b> ${v(d.className==='قسم آخر'?d.otherClass:d.className)}
-      </div>
-      <div class="footer">الثانوية التأهيلية عقبة بن نافع — الموسم الدراسي 2026-2027</div>
-    </section>`;
-
-  const win=window.open('', '_blank');
-  if(!win){
-    alert('يرجى السماح بالنوافذ المنبثقة لهذا الموقع، ثم الضغط على زر PDF مرة أخرى.');
+  const page1=`<section class="page"><header class="head"><div>المملكة المغربية</div><div>وزارة التربية الوطنية والتعليم الأولي والرياضة</div><div>الأكاديمية الجهوية للتربية والتكوين لجهة سوس ماسة</div><div>المديرية الإقليمية اشتوكة أيت باها</div><div>الجمعية الرياضية للثانوية التأهيلية عقبة بن نافع</div><h1>الورقة الشخصية للتلميذ</h1><div class="year">الموسم الدراسي: 2026-2027</div></header><div class="section-title">1. المعلومات الشخصية</div><div class="personal"><div class="photo-wrap">${photo}</div><div class="fields"><div class="item"><b>الاسم الكامل:</b><span>${v(d.fullName)}</span></div><div class="item"><b>Nom et Prénom:</b><span>${v(d.fullNameFr)}</span></div><div class="item"><b>تاريخ الازدياد:</b><span>${v(d.birthDate)}</span></div><div class="item"><b>مكان الازدياد:</b><span>${v(d.birthPlace)}</span></div><div class="item wide"><b>العنوان الشخصي:</b><span>${v(d.address)}</span></div><div class="item"><b>القسم:</b><span>${v(d.className==='قسم آخر'?d.otherClass:d.className)}</span></div></div></div><div class="section-title">2. التنقل والأسرة والدراسة</div><div class="data-grid"><div class="item"><b>المسافة بين المؤسسة والمنزل:</b><span>${v(d.distance)}</span></div><div class="item"><b>المدة الزمنية للوصول:</b><span>${v(d.duration)}</span></div><div class="item"><b>وسيلة التنقل:</b><span>${v(d.transport)}</span></div><div class="item"><b>مهنة الأب:</b><span>${v(d.fatherJob)}</span></div><div class="item"><b>مهنة الأم:</b><span>${v(d.motherJob)}</span></div><div class="item"><b>المستوى الدراسي الحالي:</b><span>${v(d.currentLevel)}</span></div><div class="item"><b>المستوى الدراسي القديم:</b><span>${v(d.oldLevel)}</span></div><div class="item"><b>عدد الإخوة:</b><span>${v(d.siblings)}</span></div><div class="item"><b>عدد الذكور:</b><span>${v(d.brothers)}</span></div><div class="item"><b>عدد الإناث:</b><span>${v(d.sisters)}</span></div><div class="item"><b>الطول:</b><span>${v(d.height)} cm</span></div><div class="item"><b>الوزن:</b><span>${v(d.weight)} kg</span></div></div><div class="section-title">3. الرياضة المفضلة</div><div class="single-line"><b>الرياضة المفضلة:</b> ${v(d.sport==='رياضة أخرى'?d.otherSport:d.sport)}</div><div class="section-title">4. تمثيل المؤسسة في المسابقات الخارجية</div><div class="single-line"><b>سبق له تمثيل المؤسسة:</b> ${v(radio('represented'))}</div><div class="data-grid compact"><div class="item"><b>اسم المسابقة:</b><span>${v(d.competitionName)}</span></div><div class="item"><b>المستوى:</b><span>${v(d.competitionLevel)}</span></div><div class="item"><b>السنة:</b><span>${v(d.competitionYear)}</span></div><div class="item"><b>الرياضة:</b><span>${v(d.competitionSport)}</span></div></div><div class="section-title">5. الحالة الصحية</div><div class="data-grid"><div class="item"><b>هل توجد حالة مرضية؟</b><span>${v(radio('illness'))}</span></div><div class="item wide"><b>تفاصيل:</b><span>${v(d.illnessDetails)}</span></div><div class="item wide"><b>مشكلة شخصية/تربوية:</b><span>${v(d.personalProblem)}</span></div><div class="page-number">الصفحة 1 / 2</div></section>`;
+  const page2=`<section class="page page2"><header class="head small-head"><div>المملكة المغربية</div><div>وزارة التربية الوطنية والتعليم الأولي والرياضة</div><div>الأكاديمية الجهوية للتربية والتكوين لجهة سوس ماسة</div><div>المديرية الإقليمية اشتوكة أيت باها</div><div>الجمعية الرياضية للثانوية التأهيلية عقبة بن نافع</div><h1>التعاقد البيداغوجي والتوقيعات</h1></header><div class="section-title">6. التعاقد البيداغوجي لمادة التربية البدنية والرياضية</div><ol class="contract-list">${contract.map(x=>`<li>${esc(x)}</li>`).join('')}</ol><div class="accept">☑ أقر أنني اطلعت على بنود التعاقد البيداغوجي وألتزم باحترامها.</div><div class="section-title">7. التوقيع الإلكتروني</div><div class="signatures"><div class="signature"><b>إمضاء التلميذ</b><div class="sig-area">${sigStudent}</div></div><div class="signature"><b>إمضاء الأستاذ المؤطر</b><div class="sig-area">${sigTeacher}</div></div></div><div class="student-summary"><b>رقم التلميذ:</b> ${v(d.studentNumber)} &nbsp;&nbsp; <b>الاسم:</b> ${v(d.fullName)}</div><div class="page-number">الصفحة 2 / 2</div></section>`;
+  // إنشاء نسخة A4 مستقلة للطباعة/الحفظ كـ PDF.
+  // هذه الطريقة لا تعتمد على مكتبة خارجية، ولذلك تعمل حتى عند ضعف الشبكة.
+  const w=window.open('', '_blank');
+  if(!w){
+    alert('يرجى السماح بالنوافذ المنبثقة لهذا الموقع، ثم اضغط على زر «حفظ PDF» مرة أخرى.');
     return;
   }
-
-  win.document.open();
-  win.document.write(`<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8">
-  <title>الورقة الشخصية - ${v(d.fullName)}</title>
-  <style>
-    @page{size:A4 portrait;margin:9mm}
-    *{box-sizing:border-box}
-    html,body{margin:0;padding:0;background:#fff;color:#111;font-family:"Noto Sans Arabic","Segoe UI",Tahoma,Arial,sans-serif}
-    body{font-size:11.5px;line-height:1.34}
-    .page{width:100%;min-height:279mm;position:relative;page-break-after:always;break-after:page}
+  const printCss=`
+    @page{size:A4 portrait;margin:0}
+    *{box-sizing:border-box;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+    html,body{margin:0!important;padding:0!important;background:#e9eef3!important;font-family:Arial,Tahoma,sans-serif;color:#17212b}
+    .page{position:relative;width:210mm;height:297mm;min-height:297mm;max-height:297mm;margin:0;padding:7mm 8mm;overflow:hidden;background:linear-gradient(135deg,#f7fbff 0%,#ffffff 48%,#f1faf6 100%);page-break-after:always;break-after:page}
     .page:last-child{page-break-after:auto;break-after:auto}
-    .head{text-align:center;border-bottom:1.5px solid #222;padding-bottom:7px;margin-bottom:8px;font-weight:800}
-    .head div:first-child{font-size:15.5px}.head div:nth-child(2){font-size:14px}.head div:nth-child(3){font-size:13px}
-    .head h1{font-size:18px;margin:4px 0 2px}.year{font-size:11.5px;font-weight:700}
-    .small-head{margin-bottom:6px}.small-head h1{font-size:15px}
-    .section-title{font-size:13.5px;font-weight:800;border-bottom:1px solid #444;padding:3px 0;margin:6px 0 4px}
-    .personal{display:grid;grid-template-columns:31mm 1fr;gap:6mm;align-items:start}
-    .photo-wrap{width:31mm}.photo{width:31mm;height:39mm;object-fit:cover;border:1px solid #555;display:block}.photo.empty{height:39mm;border:1px solid #777;display:flex;align-items:center;justify-content:center;font-size:9px}
-    .fields,.data-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px 7px}
-    .data-grid.compact{margin-top:3px}.item{border-bottom:1px solid #999;padding:2px 3px;min-height:19px}
-    .item b{display:inline-block;margin-left:4px}.item span{font-weight:500}
-    .wide{grid-column:1/-1}.single-line{border-bottom:1px solid #999;padding:3px;margin-bottom:2px}
-    .text-box{border:1px solid #999;padding:4px;margin-top:3px;min-height:29px}
-    .contract-list{margin:2px 0 4px;padding-right:21px;font-size:9.8px;line-height:1.28}
-    .contract-list li{margin-bottom:1.5px;padding-right:2px}
-    .accept{border:1px solid #777;padding:5px;font-weight:700;margin-top:5px}
-    .signatures{display:grid;grid-template-columns:1fr 1fr;gap:10mm;margin-top:5px}
-    .signature{border:1px solid #777;padding:5px;text-align:center;min-height:44mm}
-    .sig-area{height:34mm;display:flex;align-items:center;justify-content:center;margin-top:3px}
-    .sig{max-width:100%;height:30mm;object-fit:contain}
-    .student-summary{border-top:1px solid #999;margin-top:7px;padding-top:5px;font-size:10px}
-    .footer{position:absolute;bottom:0;right:0;left:0;border-top:1px solid #aaa;padding-top:3px;text-align:center;font-size:8px;color:#555}
-    @media print{.page{min-height:279mm}.footer{position:absolute}}
-  </style></head><body>
-<div id="aqbaStart" style="position:fixed;inset:0;background:#f4f7f8;z-index:9998;display:flex;align-items:center;justify-content:center;padding:18px">
-  <div class="card" style="width:min(520px,100%);text-align:center">
-    <h1 style="color:#0b6846">الجمعية الرياضية للثانوية التأهيلية عقبة بن نافع</h1>
-    <h2>👨‍🎓 فضاء التلميذ</h2>
-    <p class="note">إذا كنت مسجلاً من قبل، أدخل رقمك والقن السري. أما التلميذ الجديد فاختر التسجيل لأول مرة.</p>
-    <button class="primary" style="width:100%;margin-top:10px" onclick="openStudentLogin()">🔐 دخول تلميذ مسجل</button>
-    <button class="secondary" style="width:100%;margin-top:8px" onclick="startNewRegistration()">📝 تسجيل تلميذ جديد</button>
-    <a href="teacher.html" class="light" style="display:block;text-decoration:none;margin-top:8px;padding:10px;border-radius:10px">👨‍🏫 فضاء الأستاذ</a>
-  </div>
-</div>${page1}${page2}
-<div id="studentLoginModal" class="login-modal">
-  <div class="login-card">
-    <h2>👨‍🎓 فضاء التلميذ</h2>
-    <p class="note" style="text-align:center">أدخل رقم التلميذ وكلمة المرور الخاصة بك.</p>
-    <div class="field"><label>رقم التلميذ</label><input id="loginStudentNumber" placeholder="AQBA-2026-0021"></div>
-    <div class="field" style="margin-top:10px"><label>كلمة المرور</label><input id="loginStudentPassword" type="password"></div>
-    <button class="primary" style="width:100%;margin-top:14px" type="button" onclick="studentLogin()">دخول</button>
-    <button class="light" style="width:100%;margin-top:8px" type="button" onclick="closeStudentLogin()">إلغاء</button>
-    <div id="loginError" class="login-error"></div>
-  </div>
-</div>
-
-<div id="studentProfile" class="card profile-card">
-  <h2 class="section-title">👨‍🎓 معلوماتي</h2>
-  <div class="profile-grid" id="profileGrid"></div>
-  <div class="actions" style="margin-top:12px">
-    <button class="secondary" type="button" onclick="loadMyDataIntoForm()">✏️ تعديل معلوماتي</button>
-    <button class="light" type="button" onclick="makePDF()">📄 تحميل PDF</button>
-    <button class="danger" type="button" onclick="studentLogout()">🚪 خروج</button>
-  </div>
-</div>
-
-</body></html>`);
-  win.document.close();
-
-  // Wait for photo/signatures to load before invoking the native print engine.
-  const imgs=[...win.document.images];
-  await Promise.all(imgs.map(img=>new Promise(resolve=>{
-    if(img.complete) return resolve();
-    img.onload=resolve; img.onerror=resolve;
-  })));
-  setTimeout(()=>{
-    win.focus();
-    win.print();
-  },350);
+    .page:before{content:"";position:absolute;inset:3mm;border:1.2px solid #0b7a4b;border-radius:5mm;pointer-events:none}
+    .page:after{content:"";position:absolute;top:3mm;right:3mm;width:38mm;height:38mm;background:radial-gradient(circle at center,#0b7a4b22 0 18%,transparent 19% 100%);pointer-events:none}
+    .head{position:relative;z-index:1;text-align:center;padding:3mm 6mm 4mm;margin:0 0 4mm;border-radius:4mm;background:linear-gradient(135deg,#075f3d,#0b7a4b 52%,#126b8c);color:#fff;box-shadow:0 2mm 4mm #075f3d33;border-bottom:2mm solid #e2b63b}
+    .head div{font-size:9.2px;font-weight:700;line-height:1.28;margin:.6mm 0}
+    .head h1{font-size:18px;line-height:1.2;margin:2mm 0 0;color:#fff;font-weight:900}
+    .head .year{font-size:10px;background:#ffffff1c;border-radius:2mm;padding:1mm 3mm;display:inline-block;margin-top:1.5mm}
+    .small-head h1{font-size:16px}
+    .section-title{position:relative;z-index:1;margin:2.8mm 0 1.8mm;padding:1.5mm 3mm;border-radius:2mm;background:linear-gradient(90deg,#0b7a4b,#1689a5);color:#fff;font-size:10.2px;font-weight:900;border-right:1.5mm solid #e2b63b;box-shadow:0 1mm 2mm #00000012}
+    .personal{display:grid;grid-template-columns:36mm 1fr;gap:4mm;direction:ltr;position:relative;z-index:1}
+    .fields{direction:rtl;display:grid;grid-template-columns:1fr 1fr;gap:1.5mm}
+    .photo-wrap{display:flex;align-items:flex-start;justify-content:center}
+    .photo{width:34mm;height:42mm;object-fit:cover;border:1.2px solid #0b7a4b;border-radius:3mm;background:#fff;box-shadow:0 1.5mm 3mm #00000018}
+    .photo.empty{display:flex;align-items:center;justify-content:center;text-align:center;color:#777;font-size:8px}
+    .item{min-height:8.2mm;padding:1.4mm 2mm;border:1px solid #c8d8e3;border-radius:2mm;background:#ffffffdd;display:flex;gap:1.5mm;align-items:center;overflow:hidden}
+    .item b{font-size:7.8px;color:#075f3d;white-space:nowrap}.item span{font-size:8.2px;font-weight:600;overflow-wrap:anywhere}
+    .item.wide{grid-column:1/-1}.data-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.5mm;position:relative;z-index:1}.data-grid.compact{grid-template-columns:1fr 1fr 1fr 1fr}
+    .single-line{position:relative;z-index:1;padding:1.8mm 2.5mm;border:1px solid #c8d8e3;border-radius:2mm;background:#fff;font-size:8.5px}.single-line b{color:#075f3d}
+    .contract-list{position:relative;z-index:1;margin:0;padding:1mm 6mm 0 2mm;font-size:8.3px;line-height:1.42;background:#ffffffcc;border-radius:3mm;border:1px solid #d7e3e8}
+    .contract-list li{margin-bottom:1.2mm;padding-right:1mm}
+    .accept{position:relative;z-index:1;margin-top:3mm;padding:2.2mm 3mm;border:1px solid #8dbda8;border-radius:2mm;background:#e8f7ef;color:#075f3d;font-size:9px;font-weight:800}
+    .signatures{position:relative;z-index:1;display:grid;grid-template-columns:1fr 1fr;gap:5mm;margin-top:2mm}
+    .signature{border:1px solid #9ab0bc;border-radius:3mm;padding:2.5mm;text-align:center;background:#ffffffdd;box-shadow:0 1mm 2mm #00000010}
+    .signature>b{display:block;color:#075f3d;font-size:9px;margin-bottom:1mm}.sig-area{height:30mm;display:flex;align-items:center;justify-content:center;border:1px dashed #79919e;border-radius:2mm;background:#f9fcfd}.sig{max-width:100%;max-height:27mm;object-fit:contain}
+    .student-summary{position:relative;z-index:1;margin-top:3mm;padding:2mm 3mm;border-radius:2mm;background:#0b7a4b;color:#fff;text-align:center;font-size:9px;font-weight:700}
+    .page:before,.page:after{z-index:0}
+    .page-number{position:absolute;bottom:5mm;left:8mm;right:8mm;text-align:center;font-size:7.5px;color:#53706b;font-weight:700;z-index:2}
+    @media print{html,body{background:#fff!important}.page{margin:0!important}}
+  `;
+  w.document.open();
+  w.document.write('<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>AQBA_2026_2027_'+String(d.fullName||'Student').replace(/[^\u0600-\u06FFa-zA-Z0-9_-]+/g,'_')+'.pdf</title><style>'+printCss+'</style></head><body>'+page1+page2+'</body></html>');
+  w.document.close();
+  const waitImages=()=>{
+    const imgs=[...w.document.images];
+    return Promise.all(imgs.map(img=>new Promise(resolve=>{if(img.complete)return resolve();img.onload=resolve;img.onerror=resolve;})));
+  };
+  waitImages().then(()=>setTimeout(()=>{
+    w.focus();
+    w.print();
+  },700));
 }
+
 function resetForm(){if(!confirm('هل تريد فعلاً مسح جميع البيانات؟'))return;localStorage.removeItem(STORAGE);location.reload()}
 function exportData(){
  const d=collect(), blob=new Blob([JSON.stringify(d,null,2)],{type:'application/json;charset=utf-8'}),a=document.createElement('a');
  a.href=URL.createObjectURL(blob);a.download='استمارة_التلميذ_'+(d.fullName||'بدون_اسم')+'.json';a.click();URL.revokeObjectURL(a.href);
 }
-document.addEventListener('keydown', function(e){
-  if(e.ctrlKey && e.shiftKey && e.key.toLowerCase()==='a'){
-    $('teacherAccess').classList.toggle('hidden');
-    if(!$('teacherAccess').classList.contains('hidden')) teacherLogin();
-  }
-});
-let titleTaps=0, titleTimer;
-document.querySelector('.title h1').addEventListener('click', function(){
-  titleTaps++;
-  clearTimeout(titleTimer);
-  titleTimer=setTimeout(()=>titleTaps=0,700);
-  if(titleTaps>=3){
-    titleTaps=0;
-    $('teacherAccess').classList.toggle('hidden');
-    if(!$('teacherAccess').classList.contains('hidden')) teacherLogin();
-  }
-});
 
 function teacherLogin(){
  if(teacherMode){$('teacherPanel').classList.toggle('hidden');return}
@@ -730,26 +639,27 @@ async function studentLogin(){
   const number=$('loginStudentNumber').value.trim().toUpperCase();
   const password=$('loginStudentPassword').value;
   $('loginError').textContent='';
-  if(!/^AQBA-2026-\d{4}$/.test(number)){ $('loginError').textContent='رقم التلميذ غير صحيح.'; return; }
+  if(!/^AQBA-2026-\d+$/.test(number)){ $('loginError').textContent='رقم التلميذ غير صحيح.'; return; }
   if(!password){ $('loginError').textContent='أدخل كلمة المرور.'; return; }
+  const btn=document.querySelector('#studentLoginModal button.primary');
+  if(btn){btn.disabled=true;btn.textContent='⏳ جارٍ التحقق...';}
   try{
-    const email=number.toLowerCase()+'@students.aqba.local';
-    const r=await fetch(AQBA_SUPABASE_URL+'/auth/v1/token?grant_type=password',{
+    const r=await fetch(AQBA_SUPABASE_URL+'/functions/v1/student-login',{
       method:'POST',
       headers:{apikey:AQBA_SUPABASE_ANON_KEY,'Content-Type':'application/json'},
-      body:JSON.stringify({email,password})
+      body:JSON.stringify({student_number:number,password})
     });
-    const session=await r.json();
-    if(!r.ok || !session.access_token){ $('loginError').textContent='رقم التلميذ أو كلمة المرور غير صحيحة.'; return; }
-    const p=await fetch(AQBA_SUPABASE_URL+'/rest/v1/students?student_number=eq.'+encodeURIComponent(number)+'&select=*&limit=1',{
-      headers:{apikey:AQBA_SUPABASE_ANON_KEY,Authorization:'Bearer '+session.access_token}
-    });
-    const rows=await p.json();
-    if(!p.ok || !rows.length){ $('loginError').textContent='تعذر العثور على ملف التلميذ.'; return; }
-    sessionStorage.setItem('aqba_student_session',JSON.stringify({access_token:session.access_token,student:rows[0]}));
-    showStudentProfile(rows[0]);
+    const result=await r.json().catch(()=>({}));
+    if(!r.ok || !result.ok){ $('loginError').textContent=result.error||'رقم التلميذ أو كلمة المرور غير صحيحة.'; return; }
+    sessionStorage.setItem('aqba_student_session',JSON.stringify({access_token:result.access_token,student:result.student}));
+    showStudentProfile(result.student);
     closeStudentLogin();
-  }catch(e){ $('loginError').textContent='تعذر الاتصال بقاعدة البيانات.'; }
+  }catch(e){
+    console.error(e);
+    $('loginError').textContent='تعذر الاتصال بخدمة فضاء التلميذ. حاول مرة أخرى.';
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent='دخول';}
+  }
 }
 function showStudentProfile(s){
   const items=[
@@ -787,6 +697,107 @@ function escapeHtml(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;',
 
 
 function startNewRegistration(){document.getElementById('aqbaStart').style.display='none';document.getElementById('mainApp').style.display='block';window.scrollTo(0,0)}
+
+// حفظ محلي تلقائي: لا تضيع بيانات التلميذ إذا انقطع الاتصال.
+let aqbaSaveTimer;
+function autoSaveLocal(){ clearTimeout(aqbaSaveTimer); aqbaSaveTimer=setTimeout(()=>{try{localStorage.setItem(STORAGE,JSON.stringify(collect())); $('status').textContent='✓ تم حفظ البيانات محلياً على هذا الجهاز.';}catch(e){}},300); }
+document.addEventListener('input',e=>{if(e.target.closest && e.target.closest('#studentForm')) autoSaveLocal();});
+document.addEventListener('change',e=>{if(e.target.closest && e.target.closest('#studentForm')) autoSaveLocal();});
 </script>
+
+<script>
+(function(){
+  function showLanding(){
+    var s=document.getElementById('aqbaStart');
+    var app=document.getElementById('mainApp');
+    if(s) s.style.display='flex';
+    if(app) app.style.display='none';
+  }
+  function showApp(){
+    var s=document.getElementById('aqbaStart');
+    var app=document.getElementById('mainApp');
+    if(s) s.style.display='none';
+    if(app) app.style.display='block';
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+  function newRegistration(){
+    showApp();
+    try {
+      var f=document.getElementById('studentForm');
+      if(f) f.reset();
+      if(typeof resetForm === 'function') {
+        // Do not call resetForm because it reloads the page.
+      }
+      var status=document.getElementById('status');
+      if(status) status.textContent='';
+      var account=document.getElementById('accountCard');
+      if(account) account.style.display='none';
+    } catch(e){ console.error(e); }
+  }
+  function existingStudent(){
+    // The existing login modal/function is used when available.
+    if(typeof window.openStudentLogin === 'function'){
+      window.openStudentLogin();
+      return;
+    }
+    if(typeof window.studentLogin === 'function'){
+      window.studentLogin();
+      return;
+    }
+    // Fallback: reveal the login modal if its common IDs exist.
+    var modal=document.getElementById('studentLoginModal') ||
+               document.getElementById('loginModal') ||
+               document.querySelector('[id*="Login"][id*="Modal"]');
+    if(modal){
+      modal.style.display='flex';
+      return;
+    }
+    alert('تعذر فتح فضاء التلميذ المسجل. يرجى تحديث الصفحة والمحاولة مرة أخرى.');
+  }
+  document.addEventListener('DOMContentLoaded',function(){
+    var b1=document.getElementById('btnStudentLogin');
+    var b2=document.getElementById('btnNewRegistration');
+    if(b1) b1.addEventListener('click',existingStudent);
+    if(b2) b2.addEventListener('click',newRegistration);
+
+    // Back button support
+    var back=document.getElementById('backToLanding');
+    if(back) back.addEventListener('click',function(e){e.preventDefault();showLanding();});
+  });
+})();
+</script>
+
+
+<!-- نافذة دخول التلميذ المسجل -->
+<div id="studentLoginModal" class="login-modal" role="dialog" aria-modal="true" aria-labelledby="studentLoginTitle">
+  <div class="login-card">
+    <h2 id="studentLoginTitle">🔐 دخول التلميذ المسجل</h2>
+    <p class="note">أدخل رقم التلميذ وكلمة المرور اللذين حصلت عليهما عند التسجيل.</p>
+    <div class="field" style="margin-top:12px">
+      <label for="loginStudentNumber">رقم التلميذ</label>
+      <input id="loginStudentNumber" autocomplete="username" placeholder="AQBA-2026-0001" dir="ltr">
+    </div>
+    <div class="field" style="margin-top:12px">
+      <label for="loginStudentPassword">كلمة المرور</label>
+      <input id="loginStudentPassword" type="password" autocomplete="current-password" placeholder="أدخل كلمة المرور" dir="ltr">
+    </div>
+    <div id="loginError" class="login-error"></div>
+    <div class="actions" style="margin-top:16px">
+      <button type="button" class="primary" onclick="studentLogin()">دخول</button>
+      <button type="button" class="light" onclick="closeStudentLogin()">إلغاء</button>
+    </div>
+  </div>
+</div>
+
+<!-- بطاقة ملف التلميذ بعد الدخول -->
+<div id="studentProfile" class="card profile-card">
+  <h2 class="section-title">👤 فضاء التلميذ</h2>
+  <div id="profileGrid" class="profile-grid"></div>
+  <div class="actions" style="margin-top:14px">
+    <button type="button" class="secondary" onclick="loadMyDataIntoForm()">عرض بياناتي في الاستمارة</button>
+    <button type="button" class="light" onclick="studentLogout()">تسجيل الخروج</button>
+  </div>
+</div>
+
 </body>
 </html>
