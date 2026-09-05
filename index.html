@@ -134,7 +134,7 @@ async function sendStudentToDatabase(d) {
 
 </head>
 <body>
-<div id="aqbaVersion" style="position:fixed;bottom:6px;left:8px;z-index:9999;font-size:10px;opacity:.45;direction:ltr">AQBA-V21</div>
+<div id="aqbaVersion" style="position:fixed;bottom:6px;left:8px;z-index:9999;font-size:10px;opacity:.45;direction:ltr">AQBA-V22</div>
 <div id="aqbaStart" style="position:fixed;inset:0;background:#f4f7f8;z-index:9998;display:flex;align-items:center;justify-content:center;padding:18px">
   <div class="card" style="width:min(520px,100%);text-align:center">
     <div class="institution-header" dir="rtl" style="line-height:1.65;margin-bottom:14px">
@@ -684,7 +684,7 @@ async function studentLogin(){
         try{
           sessionStorage.setItem('aqba_student_session',JSON.stringify({access_token:r.data.access_token,refresh_token:r.data.refresh_token||null,student:r.data.student}));
         }catch(e){console.warn('sessionStorage:',e);}
-        try{closeStudentLogin(); showStudentProfile(r.data.student); showAppAfterStudentLogin();}catch(e){console.error('profile:',e);$('loginError').textContent='تم تسجيل الدخول، لكن تعذر عرض ملف التلميذ: '+(e.message||e);return;}
+        try{showStudentProfile(r.data.student); showAppAfterStudentLogin(); closeStudentLogin();}catch(e){console.error('profile:',e);$('loginError').textContent='تم تسجيل الدخول، لكن تعذر عرض ملف التلميذ: '+(e.message||e);return;}
         closeStudentLogin();
         return;
       }
@@ -708,7 +708,7 @@ async function studentLogin(){
     if(!p.ok){$('loginError').textContent='تم التحقق من الحساب، لكن تعذر الوصول إلى ملف التلميذ (HTTP '+p.status+').';return;}
     if(!Array.isArray(p.data)||!p.data.length){$('loginError').textContent='تم التحقق من الحساب، لكن لم يتم العثور على ملف بهذا الرقم. تحقق من ربط الحساب بملف التلميذ.';return;}
     try{sessionStorage.setItem('aqba_student_session',JSON.stringify({access_token:auth.data.access_token,refresh_token:auth.data.refresh_token||null,student:p.data[0]}));}catch(e){console.warn('sessionStorage:',e);}
-    try{closeStudentLogin(); showStudentProfile(p.data[0]); showAppAfterStudentLogin();}catch(e){console.error('profile:',e);$('loginError').textContent='تم تسجيل الدخول، لكن تعذر عرض ملف التلميذ: '+(e.message||e);return;}
+    try{showStudentProfile(p.data[0]); showAppAfterStudentLogin(); closeStudentLogin();}catch(e){console.error('profile:',e);$('loginError').textContent='تم تسجيل الدخول، لكن تعذر عرض ملف التلميذ: '+(e.message||e);return;}
     closeStudentLogin();
   }catch(e){
     console.error('studentLogin V19:',e);
