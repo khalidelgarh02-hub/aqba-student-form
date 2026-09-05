@@ -134,7 +134,7 @@ async function sendStudentToDatabase(d) {
 
 </head>
 <body>
-<div id="aqbaVersion" style="position:fixed;bottom:6px;left:8px;z-index:9999;font-size:10px;opacity:.45;direction:ltr">AQBA-V16</div>
+<div id="aqbaVersion" style="position:fixed;bottom:6px;left:8px;z-index:9999;font-size:10px;opacity:.45;direction:ltr">AQBA-V17</div>
 <div id="aqbaStart" style="position:fixed;inset:0;background:#f4f7f8;z-index:9998;display:flex;align-items:center;justify-content:center;padding:18px">
   <div class="card" style="width:min(520px,100%);text-align:center">
     <div class="institution-header" dir="rtl" style="line-height:1.65;margin-bottom:14px">
@@ -644,97 +644,76 @@ async function studentLogin(){
   if(!password){ $('loginError').textContent='أدخل كلمة المرور.'; return; }
   const btn=document.querySelector('#studentLoginModal button.primary');
   if(btn){btn.disabled=true;btn.textContent='⏳ جارٍ التحقق...';}
-
   const email=number.toLowerCase()+'@students.aqba.local';
-  let edgeWorked=false;
+
+  function xhrJson(url, method, headers, body, timeout){
+    return new Promise((resolve,reject)=>{
+      const x=new XMLHttpRequest();
+      let settled=false;
+      const finish=(fn,v)=>{if(settled)return;settled=true;fn(v);};
+      try{
+        x.open(method,url,true);
+        x.timeout=timeout||15000;
+        Object.keys(headers||{}).forEach(k=>x.setRequestHeader(k,headers[k]));
+        x.onreadystatechange=()=>{
+          if(x.readyState!==4)return;
+          let data={};
+          try{data=x.responseText?JSON.parse(x.responseText):{};}catch(_){data={};}
+          finish(resolve,{status:x.status,ok:x.status>=200&&x.status<300,data:data,text:x.responseText||''});
+        };
+        x.onerror=()=>finish(reject,new Error('تعذر الاتصال بالشبكة (XHR).'));
+        x.ontimeout=()=>finish(reject,new Error('انتهت مهلة الاتصال بخدمة فضاء التلميذ.'));
+        x.onabort=()=>finish(reject,new Error('تم إلغاء طلب الاتصال.'));
+        x.send(body==null?null:JSON.stringify(body));
+      }catch(e){finish(reject,e);}
+    });
+  }
+
   try{
-    // محاولة أولى: Edge Function. بدون AbortController لتفادي خطأ المتصفح
-    // "object ... no longer usable" في بعض البيئات.
+    // 1) Edge Function عبر XMLHttpRequest لتجنب مشكلة fetch/AbortSignal في بعض المتصفحات.
     try{
-      const r=await fetch(AQBA_SUPABASE_URL+'/functions/v1/student-login',{
-        method:'POST',
-        mode:'cors',
-        cache:'no-store',
-        headers:{
-          'apikey':AQBA_SUPABASE_ANON_KEY,
-          'Content-Type':'application/json'
-        },
-        body:JSON.stringify({student_number:number,password:password})
-      });
-      const result=await r.json().catch(()=>({}));
-      if(r.ok && result && result.ok && result.student){
-        sessionStorage.setItem('aqba_student_session',JSON.stringify({
-          access_token:result.access_token,
-          refresh_token:result.refresh_token||null,
-          student:result.student
-        }));
-        edgeWorked=true;
-        showStudentProfile(result.student);
+      const r=await xhrJson(AQBA_SUPABASE_URL+'/functions/v1/student-login','POST',{
+        'apikey':AQBA_SUPABASE_ANON_KEY,
+        'Content-Type':'application/json'
+      },{student_number:number,password:password},15000);
+      if(r.ok && r.data && r.data.ok && r.data.student){
+        try{
+          sessionStorage.setItem('aqba_student_session',JSON.stringify({access_token:r.data.access_token,refresh_token:r.data.refresh_token||null,student:r.data.student}));
+        }catch(e){console.warn('sessionStorage:',e);}
+        try{showStudentProfile(r.data.student);}catch(e){console.error('profile:',e);$('loginError').textContent='تم تسجيل الدخول، لكن تعذر عرض ملف التلميذ: '+(e.message||e);return;}
         closeStudentLogin();
         return;
       }
-      // أخطاء بيانات الدخول من الخدمة لا تحتاج إلى fallback.
-      if(r.status===401 || r.status===404 && result && result.error && !String(result.error).includes('Function')){
-        $('loginError').textContent=(result&&result.error)||'رقم التلميذ أو كلمة المرور غير صحيحة.';
-        return;
-      }
-    }catch(edgeErr){
-      console.warn('student-login unavailable:',edgeErr);
-    }
+      if(r.status===401){$('loginError').textContent=(r.data&&r.data.error)||'رقم التلميذ أو كلمة المرور غير صحيحة.';return;}
+    }catch(e){console.warn('Edge XHR:',e);}
 
-    // الطريقة الاحتياطية: Supabase Auth مباشرة.
-    const auth=await fetch(AQBA_SUPABASE_URL+'/auth/v1/token?grant_type=password',{
-      method:'POST',
-      mode:'cors',
-      cache:'no-store',
-      headers:{
-        'apikey':AQBA_SUPABASE_ANON_KEY,
-        'Content-Type':'application/json'
-      },
-      body:JSON.stringify({email:email,password:password})
-    });
-    const authData=await auth.json().catch(()=>({}));
-    if(!auth.ok || !authData.access_token){
-      $('loginError').textContent=authData.error_description||authData.msg||'رقم التلميذ أو كلمة المرور غير صحيحة.';
+    // 2) احتياطياً: Supabase Auth مباشرة عبر XMLHttpRequest.
+    const auth=await xhrJson(AQBA_SUPABASE_URL+'/auth/v1/token?grant_type=password','POST',{
+      'apikey':AQBA_SUPABASE_ANON_KEY,
+      'Content-Type':'application/json'
+    },{email:email,password:password},15000);
+    if(!auth.ok || !auth.data || !auth.data.access_token){
+      $('loginError').textContent=(auth.data&& (auth.data.error_description||auth.data.msg))||('فشل تسجيل الدخول (HTTP '+auth.status+').');
       return;
     }
-
-    const p=await fetch(AQBA_SUPABASE_URL+'/rest/v1/students?student_number=eq.'+encodeURIComponent(number)+'&select=*&limit=1',{
-      method:'GET',
-      mode:'cors',
-      cache:'no-store',
-      headers:{
-        'apikey':AQBA_SUPABASE_ANON_KEY,
-        'Authorization':'Bearer '+authData.access_token,
-        'Accept':'application/json'
-      }
-    });
-    const rows=await p.json().catch(()=>[]);
-    if(!p.ok){
-      $('loginError').textContent='تم التحقق من الحساب، لكن تعذر الوصول إلى ملف التلميذ (HTTP '+p.status+').';
-      return;
-    }
-    if(!Array.isArray(rows) || !rows.length){
-      $('loginError').textContent='تم التحقق من الحساب، لكن لم يتم العثور على ملف بهذا الرقم. تحقق من ربط الحساب بملف التلميذ.';
-      return;
-    }
-
-    sessionStorage.setItem('aqba_student_session',JSON.stringify({
-      access_token:authData.access_token,
-      refresh_token:authData.refresh_token||null,
-      student:rows[0]
-    }));
-    showStudentProfile(rows[0]);
+    const p=await xhrJson(AQBA_SUPABASE_URL+'/rest/v1/students?student_number=eq.'+encodeURIComponent(number)+'&select=*&limit=1','GET',{
+      'apikey':AQBA_SUPABASE_ANON_KEY,
+      'Authorization':'Bearer '+auth.data.access_token,
+      'Accept':'application/json'
+    },null,15000);
+    if(!p.ok){$('loginError').textContent='تم التحقق من الحساب، لكن تعذر الوصول إلى ملف التلميذ (HTTP '+p.status+').';return;}
+    if(!Array.isArray(p.data)||!p.data.length){$('loginError').textContent='تم التحقق من الحساب، لكن لم يتم العثور على ملف بهذا الرقم. تحقق من ربط الحساب بملف التلميذ.';return;}
+    try{sessionStorage.setItem('aqba_student_session',JSON.stringify({access_token:auth.data.access_token,refresh_token:auth.data.refresh_token||null,student:p.data[0]}));}catch(e){console.warn('sessionStorage:',e);}
+    try{showStudentProfile(p.data[0]);}catch(e){console.error('profile:',e);$('loginError').textContent='تم تسجيل الدخول، لكن تعذر عرض ملف التلميذ: '+(e.message||e);return;}
     closeStudentLogin();
   }catch(e){
-    console.error('studentLogin:',e);
-    let msg='تعذر الاتصال بخدمة فضاء التلميذ.';
-    if(e && e.message) msg+=' '+e.message;
-    $('loginError').textContent=msg;
+    console.error('studentLogin V17:',e);
+    $('loginError').textContent='تعذر الاتصال بخدمة فضاء التلميذ: '+(e&&e.message?e.message:String(e));
   }finally{
     if(btn){btn.disabled=false;btn.textContent='دخول';}
   }
 }
+
 function showStudentProfile(s){
   const items=[
     ['رقم التلميذ',s.student_number],['الاسم الكامل',s.full_name],['Nom et Prénom',s.full_name_fr],
