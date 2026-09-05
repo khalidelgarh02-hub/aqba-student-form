@@ -644,31 +644,55 @@ async function studentLogin(){
   const btn=document.querySelector('#studentLoginModal button.primary');
   if(btn){btn.disabled=true;btn.textContent='⏳ جارٍ التحقق...';}
   try{
-    const controller=new AbortController();
-    const timer=setTimeout(()=>controller.abort(),15000);
-    const r=await fetch(AQBA_SUPABASE_URL+'/functions/v1/student-login',{
-      method:'POST',
-      mode:'cors',
-      cache:'no-store',
-      signal:controller.signal,
+    // Primary method: secure Edge Function
+    let r, raw='', result={};
+    try{
+      const controller=new AbortController();
+      const timer=setTimeout(()=>controller.abort(),12000);
+      r=await fetch(AQBA_SUPABASE_URL+'/functions/v1/student-login',{
+        method:'POST',mode:'cors',cache:'no-store',signal:controller.signal,
+        headers:{apikey:AQBA_SUPABASE_ANON_KEY,'Content-Type':'application/json'},
+        body:JSON.stringify({student_number:number,password})
+      });
+      clearTimeout(timer);
+      raw=await r.text();
+      try{result=raw?JSON.parse(raw):{};}catch(_){result={};}
+      if(r.ok && result.ok){
+        sessionStorage.setItem('aqba_student_session',JSON.stringify({access_token:result.access_token,student:result.student}));
+        showStudentProfile(result.student); closeStudentLogin(); return;
+      }
+      // HTTP errors from the function are real application errors; do not hide them.
+      if(r.status && r.status!==404 && r.status!==502 && r.status!==503){
+        $('loginError').textContent=result.error||('تعذر تسجيل الدخول (HTTP '+r.status+').'); return;
+      }
+    }catch(edgeErr){
+      console.warn('student-login Edge Function unavailable, using fallback:',edgeErr);
+    }
+
+    // Fallback: Supabase Auth REST endpoint (works even if the Edge Function is unreachable).
+    const auth=await fetch(AQBA_SUPABASE_URL+'/auth/v1/token?grant_type=password',{
+      method:'POST',mode:'cors',cache:'no-store',
       headers:{apikey:AQBA_SUPABASE_ANON_KEY,'Content-Type':'application/json'},
-      body:JSON.stringify({student_number:number,password})
+      body:JSON.stringify({email:number.toLowerCase()+'@students.aqba.local',password})
     });
-    clearTimeout(timer);
-    const raw=await r.text();
-    let result={};
-    try{result=raw?JSON.parse(raw):{};}catch(_){}
-    if(!r.ok || !result.ok){
-      $('loginError').textContent=result.error||('تعذر تسجيل الدخول (HTTP '+r.status+').');
+    const authData=await auth.json().catch(()=>({}));
+    if(!auth.ok || !authData.access_token){
+      $('loginError').textContent=authData.error_description||authData.msg||'رقم التلميذ أو كلمة المرور غير صحيحة.';
       return;
     }
-    sessionStorage.setItem('aqba_student_session',JSON.stringify({access_token:result.access_token,student:result.student}));
-    showStudentProfile(result.student);
-    closeStudentLogin();
+    const p=await fetch(AQBA_SUPABASE_URL+'/rest/v1/students?student_number=eq.'+encodeURIComponent(number)+'&select=*&limit=1',{
+      headers:{apikey:AQBA_SUPABASE_ANON_KEY,Authorization:'Bearer '+authData.access_token}
+    });
+    const rows=await p.json().catch(()=>[]);
+    if(!p.ok || !rows.length){
+      $('loginError').textContent='تم التحقق من الحساب، لكن تعذر العثور على ملف التلميذ. تحقق من ربط الحساب بملفه.';
+      return;
+    }
+    sessionStorage.setItem('aqba_student_session',JSON.stringify({access_token:authData.access_token,refresh_token:authData.refresh_token,student:rows[0]}));
+    showStudentProfile(rows[0]); closeStudentLogin();
   }catch(e){
     console.error('studentLogin:',e);
-    if(e && e.name==='AbortError') $('loginError').textContent='انتهت مهلة الاتصال بخدمة فضاء التلميذ. تحقق من الاتصال بالإنترنت.';
-    else $('loginError').textContent='تعذر الوصول إلى خدمة فضاء التلميذ. افتح الصفحة من جديد أو أرسل لي نص الخطأ الظاهر.';
+    $('loginError').textContent='تعذر الاتصال بخدمة فضاء التلميذ: '+(e?.message||String(e));
   }finally{
     if(btn){btn.disabled=false;btn.textContent='دخول';}
   }
