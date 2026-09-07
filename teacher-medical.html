@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>الملفات الطبية والبدنية — فضاء الأستاذ</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <style>
 *{box-sizing:border-box}body{margin:0;background:#f4f7f8;color:#17212b;font-family:Tahoma,Arial,sans-serif}
 .wrap{max-width:1200px;margin:24px auto;padding:16px}.card{background:#fff;border-radius:16px;padding:20px;margin-bottom:16px;box-shadow:0 5px 20px #0001}
@@ -30,7 +31,7 @@ th,td{padding:10px;border-bottom:1px solid #e2e7ea;text-align:right}th{backgroun
 
 <div id="app" class="wrap hidden">
 <div class="card"><div class="center"><h1>الملفات الطبية والبدنية للتلاميذ</h1><p id="teacherEmail" class="muted"></p></div>
-<div class="actions"><button id="refreshBtn" class="secondary">تحديث القائمة</button><button id="logoutBtn" class="light">تسجيل الخروج</button></div></div>
+<div class="actions"><button id="refreshBtn" class="secondary">تحديث القائمة</button><button id="exportBtn" class="primary">📊 تصدير Excel</button><button id="logoutBtn" class="light">تسجيل الخروج</button></div></div>
 <div class="card"><h2>🔎 البحث عن تلميذ</h2>
 <div class="toolbar"><div><label>الاسم أو رقم التلميذ أو القسم</label><input id="search" placeholder="اكتب للبحث..."></div>
 <div><label>القسم</label><select id="classFilter"><option value="">كل الأقسام</option></select></div>
@@ -69,6 +70,45 @@ function fillClasses(){const cs=[...new Set(rows.map(r=>r.class_name||r.other_cl
 function render(){const q=$('search').value.trim().toLowerCase(),c=$('classFilter').value;const list=rows.filter(r=>{const h=[r.full_name,r.full_name_fr,r.student_number,r.class_name,r.other_class,r.current_level].join(' ').toLowerCase();return(!q||h.includes(q))&&(!c||(r.class_name||r.other_class)===c)});$('tbody').innerHTML=list.map((r,i)=>{const m=Array.isArray(r.student_medical_records)?r.student_medical_records[0]:r.student_medical_records;return '<tr><td>'+String(i+1)+'</td><td><b>'+esc(r.full_name)+'</b><div class="muted">'+esc(r.full_name_fr||'')+'</div></td><td>'+esc(r.student_number||'—')+'</td><td>'+esc(r.class_name||r.other_class||'—')+'</td><td>'+(m?'<span class="badge">موجود</span>':'غير معبأ')+'</td><td><button class="secondary" onclick="openStudent(\''+String(r.id).replaceAll("'","\\'")+'\')">فتح الملف</button></td></tr>'}).join('')}
 function openStudent(id){current=rows.find(r=>String(r.id)===String(id));if(!current)return;const m=Array.isArray(current.student_medical_records)?current.student_medical_records[0]:current.student_medical_records;$('studentInfo').innerHTML=[['الاسم الكامل',current.full_name],['Nom et prénom',current.full_name_fr],['رقم التلميذ',current.student_number],['القسم',current.class_name||current.other_class],['المستوى',current.current_level],['الطول',current.height],['الوزن',current.weight]].map(x=>'<div class="detail"><strong>'+esc(x[0])+'</strong>'+esc(x[1]??'—')+'</div>').join('');['heart_rate','vma','run_30m','horizontal_jump','vertical_jump','medicine_ball_throw','flexibility_sitting','flexibility_standing','static_balance','measured_at','notes'].forEach(k=>$(k).value=m?.[k]??'');$('editor').classList.remove('hidden');$('editor').scrollIntoView({behavior:'smooth'})}
 async function save(){if(!current)return;msg('saveMsg','جارٍ الحفظ...');const b={student_id:current.id};['heart_rate','vma','run_30m','horizontal_jump','vertical_jump','medicine_ball_throw','flexibility_sitting','flexibility_standing','static_balance','measured_at','notes'].forEach(k=>b[k]=$(k).value||null);try{const d=await callFn('POST',b);const i=rows.findIndex(r=>String(r.id)===String(current.id));if(i>=0)rows[i].student_medical_records=d.medical;render();msg('saveMsg','تم حفظ الملف الطبي بنجاح.','success')}catch(e){msg('saveMsg','تعذر الحفظ: '+e.message,'error')}}
-$('loginBtn').onclick=login;$('logoutBtn').onclick=async()=>{await sb.auth.signOut();location.reload()};$('refreshBtn').onclick=loadRows;$('searchBtn').onclick=render;$('search').oninput=render;$('classFilter').onchange=render;$('saveBtn').onclick=save;$('closeEditorBtn').onclick=()=>{$('editor').classList.add('hidden');current=null};$('password').onkeydown=e=>{if(e.key==='Enter')login()};boot();
+
+function exportExcel(){
+  const q=$('search').value.trim().toLowerCase(), c=$('classFilter').value;
+  const list=rows.filter(r=>{
+    const h=[r.full_name,r.full_name_fr,r.student_number,r.class_name,r.other_class,r.current_level].join(' ').toLowerCase();
+    return (!q||h.includes(q))&&(!c||(r.class_name||r.other_class)===c);
+  });
+  if(!list.length){alert('لا توجد بيانات لتصديرها.');return}
+  const data=list.map(r=>{
+    const m=Array.isArray(r.student_medical_records)?r.student_medical_records[0]:r.student_medical_records;
+    return {
+      'رقم التلميذ':r.student_number||'',
+      'الاسم الكامل':r.full_name||'',
+      'Nom et prénom':r.full_name_fr||'',
+      'القسم':r.class_name||r.other_class||'',
+      'المستوى':r.current_level||'',
+      'الطول':r.height??'',
+      'الوزن':r.weight??'',
+      'معدل ضربات القلب':m?.heart_rate??'',
+      'VMA':m?.vma??'',
+      'العدو 30 متر':m?.run_30m??'',
+      'القفز الأفقي':m?.horizontal_jump??'',
+      'القفز العمودي':m?.vertical_jump??'',
+      'رمي الكرة الطبية':m?.medicine_ball_throw??'',
+      'المرونة جلوساً':m?.flexibility_sitting??'',
+      'المرونة وقوفاً':m?.flexibility_standing??'',
+      'التوازن الثابت':m?.static_balance??'',
+      'تاريخ القياس':m?.measured_at??'',
+      'ملاحظات':m?.notes??''
+    };
+  });
+  const ws=XLSX.utils.json_to_sheet(data);
+  ws['!cols']=Object.keys(data[0]).map(k=>({wch:Math.max(14,Math.min(35,k.length+8))}));
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'الملفات الطبية');
+  const stamp=new Date().toISOString().slice(0,10);
+  XLSX.writeFile(wb,`AQBA-medical-records-${stamp}.xlsx`);
+}
+
+$('loginBtn').onclick=login;$('logoutBtn').onclick=async()=>{await sb.auth.signOut();location.reload()};$('refreshBtn').onclick=loadRows;$('exportBtn').onclick=exportExcel;$('searchBtn').onclick=render;$('search').oninput=render;$('classFilter').onchange=render;$('saveBtn').onclick=save;$('closeEditorBtn').onclick=()=>{$('editor').classList.add('hidden');current=null};$('password').onkeydown=e=>{if(e.key==='Enter')login()};boot();
 </script>
 </body></html>
