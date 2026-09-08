@@ -111,6 +111,19 @@ button{border:0;border-radius:10px;padding:12px 18px;font-size:15px;font-weight:
 .profile-item b{display:block;color:#566}
 @media(max-width:700px){.account-grid,.profile-grid{grid-template-columns:1fr}}
 
+
+/* ===== Integrated medical form ===== */
+.medical-link-card{display:flex;align-items:center;gap:14px;padding:15px;margin-top:18px;border:1px solid #cfe5dc;border-radius:14px;background:linear-gradient(135deg,#f2fbf7,#eef7ff)}
+.medical-link-icon{font-size:34px}.medical-link-card strong{color:#0b6846;font-size:18px}.medical-link-card p{margin:3px 0;color:#64717a;font-size:13px}.medical-link-card button{margin-right:auto;white-space:nowrap}
+.medical-card{border:1px solid #cfe5dc!important;background:linear-gradient(145deg,#fff,#f7fcfa)!important;box-shadow:0 10px 30px #0b68461a!important;overflow:hidden;position:relative}
+.medical-card:before{content:"";position:absolute;top:0;right:0;left:0;height:6px;background:linear-gradient(90deg,#0b6846,#159b68,#1976b9)}
+.medical-top{padding:10px 14px 13px;text-align:center}.medical-kicker{font-size:13px;color:#5f6d75}.medical-top h2{margin:3px 0;color:#075c40;font-size:25px}.medical-year{display:inline-block;padding:4px 13px;border-radius:20px;background:#eaf5ef;color:#0b6846;font-weight:700}
+.medical-identity{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:11px;border:1px solid #d6e6df;border-radius:11px;background:#fff;margin-bottom:12px}
+.medical-section-title{margin:13px 0 8px;padding:9px 13px;border-radius:10px;color:#fff;font-weight:800;background:linear-gradient(90deg,#0b6846,#1687a4);border-right:5px solid #e3b83f}
+.medical-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:11px}.medical-field{background:#fff;border:1px solid #d7e5df;border-radius:11px;padding:10px}.medical-field label{color:#29493d;font-weight:800}.medical-field input,.medical-field select,.medical-field textarea{background:#fbfefd}.medical-wide{grid-column:1/-1}.unit-input{display:flex;direction:ltr;align-items:stretch}.unit-input input{border-radius:9px 0 0 9px!important}.unit-input span{min-width:58px;display:flex;align-items:center;justify-content:center;background:#eaf5ef;color:#0b6846;font-weight:800;border:1px solid #c8ddd4;border-right:0;border-radius:0 9px 9px 0}.medical-actions{margin-top:14px}
+@media(max-width:700px){.medical-link-card{flex-direction:column;text-align:center}.medical-link-card button{margin:0;width:100%}.medical-identity,.medical-grid{grid-template-columns:1fr}.medical-wide{grid-column:auto}}
+@media print{.medical-card{box-shadow:none!important}.medical-link-card{display:none!important}.medical-card:before{height:3px}}
+
 </style>
 
 <script>
@@ -327,18 +340,20 @@ async function sendStudentToDatabase(d) {
   <div class="field"><label>الرياضة</label><input id="competitionSport"></div>
 </div>
 
-<h2 class="section-title" style="margin-top:25px">5. معلومات صحية وشخصية</h2>
-<div class="field"><label>هل تعاني من مرض ما؟ <span class="required">*</span></label>
-  <div class="checks">
-    <label class="check"><input type="radio" name="illness" value="نعم" required> نعم</label>
-    <label class="check"><input type="radio" name="illness" value="لا"> لا</label>
+<div class="medical-hidden-fields" style="display:none!important">
+  <input id="heightHiddenCompat">
+  <input id="weightHiddenCompat">
+  <input id="illnessDetails">
+  <input id="personalProblem">
+</div>
+<div class="medical-link-card">
+  <div class="medical-link-icon">🩺</div>
+  <div>
+    <strong>الاستمارة الطبية والبدنية</strong>
+    <p>القياسات والمعلومات الطبية الخاصة بالتلميذ توجد في استمارة مستقلة داخل فضاء التلميذ.</p>
   </div>
+  <button type="button" class="secondary" onclick="openMedicalForm()">فتح الاستمارة الطبية</button>
 </div>
-<div id="illnessWrap" class="field hidden" style="margin-top:12px">
-  <label>إذا كان جوابك "نعم"، شخص هذا المرض مع ذكر نوعية الأدوية المستعملة:</label>
-  <textarea id="illnessDetails"></textarea>
-</div>
-<div class="field" style="margin-top:12px"><label>هل تعاني من مشكل شخصي؟</label><textarea id="personalProblem"></textarea></div>
 
 <h2 class="section-title" style="margin-top:25px">6. التعاقد البيداغوجي لمادة التربية البدنية والرياضية</h2>
 <div class="contract">
@@ -723,6 +738,7 @@ function loadMyDataIntoForm(){
 function studentLogout(){
   sessionStorage.removeItem('aqba_student_session');
   $('studentProfile').style.display='none';
+  const m=$('medicalFormCard'); if(m)m.style.display='none';
   alert('تم تسجيل الخروج.');
 }
 function escapeHtml(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));}
@@ -757,6 +773,121 @@ document.addEventListener('change',e=>{if(e.target.closest && e.target.closest('
 </script>
 
 <script>
+
+/* ===== Integrated medical form logic ===== */
+function getStudentSession(){try{return JSON.parse(sessionStorage.getItem('aqba_student_session')||'null')}catch(_){return null}}
+function getStudentAccessToken(){const x=getStudentSession();return x?.access_token||null}
+function getLoggedStudent(){try{return getStudentSession()?.student||null}catch(_){return null}}
+function openMedicalForm(){
+  const s=getLoggedStudent();
+  if(!s){alert('يرجى تسجيل الدخول إلى فضاء التلميذ أولاً.');return}
+  $('studentProfile').style.display='none';
+  $('studentForm').style.display='none';
+  $('medicalFormCard').style.display='block';
+  $('medicalIdentity').innerHTML=
+    '<div><b>رقم التلميذ</b><br>'+escapeHtml(s.student_number||'—')+'</div>'+
+    '<div><b>الاسم الكامل</b><br>'+escapeHtml(s.full_name||'—')+'</div>'+
+    '<div><b>القسم</b><br>'+escapeHtml(s.class_name||'—')+'</div>';
+  loadMedicalForm();
+  $('medicalFormCard').scrollIntoView({behavior:'smooth',block:'start'});
+}
+function closeMedicalForm(){
+  $('medicalFormCard').style.display='none';
+  $('studentForm').style.display='block';
+  $('studentProfile').style.display='block';
+  $('studentProfile').scrollIntoView({behavior:'smooth',block:'start'});
+}
+function medicalValues(){
+  return {
+    heart_rate:$('medHeartRate').value||null,
+    vma:$('medVma').value||null,
+    run_30m:$('medRun30m').value||null,
+    horizontal_jump:$('medHorizontalJump').value||null,
+    vertical_jump:$('medVerticalJump').value||null,
+    medicine_ball_throw:$('medMedicineBall').value||null,
+    flexibility_sitting:$('medFlexSit').value||null,
+    flexibility_standing:$('medFlexStand').value||null,
+    static_balance:$('medBalance').value||null,
+    measured_at:$('medDate').value||null,
+    notes:null
+  };
+}
+async function loadMedicalForm(){
+  const s=getLoggedStudent(); if(!s)return;
+  $('medHeight').value=s.height??'';
+  $('medWeight').value=s.weight??'';
+  try{
+    const r=await fetch(AQBA_SUPABASE_URL+'/rest/v1/student_medical_records?account_user_id=eq.'+encodeURIComponent(s.account_user_id||s.id)+'&select=heart_rate,vma,run_30m,horizontal_jump,vertical_jump,medicine_ball_throw,flexibility_sitting,flexibility_standing,static_balance,measured_at,notes&limit=1',{
+      headers:{apikey:AQBA_SUPABASE_ANON_KEY,Authorization:'Bearer '+(getStudentAccessToken()||AQBA_SUPABASE_ANON_KEY)}
+    });
+    if(!r.ok)return;
+    const a=await r.json(),m=a[0]; if(!m)return;
+    const map={medHeartRate:'heart_rate',medVma:'vma',medRun30m:'run_30m',medHorizontalJump:'horizontal_jump',medVerticalJump:'vertical_jump',medMedicineBall:'medicine_ball_throw',medFlexSit:'flexibility_sitting',medFlexStand:'flexibility_standing',medBalance:'static_balance',medDate:'measured_at'};
+    Object.keys(map).forEach(id=>{if($(id)&&m[map[id]]!=null)$(id).value=m[map[id]]});
+  }catch(e){console.warn('loadMedicalForm',e)}
+}
+async function saveMedicalForm(){
+  const s=getLoggedStudent();
+  if(!s){alert('انتهت جلسة الدخول. يرجى تسجيل الدخول من جديد.');return}
+  const status=$('medicalStatus');
+  if(!getStudentAccessToken()){status.textContent='✗ انتهت جلسة التلميذ. يرجى تسجيل الخروج ثم الدخول من جديد.';return}
+  status.textContent='⏳ جارٍ حفظ الاستمارة الطبية...';
+  const v=medicalValues();
+  const body={student_id:s.id,account_user_id:s.account_user_id,student_number:s.student_number,...v};
+  try{
+    const r=await fetch(AQBA_SUPABASE_URL+'/rest/v1/student_medical_records?on_conflict=student_id',{
+      method:'POST',
+      headers:{apikey:AQBA_SUPABASE_ANON_KEY,Authorization:'Bearer '+(getStudentAccessToken()||AQBA_SUPABASE_ANON_KEY),'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'},
+      body:JSON.stringify(body)
+    });
+    if(!r.ok){const t=await r.text();throw new Error(t||'تعذر حفظ البيانات')}
+    status.textContent='✓ تم حفظ الاستمارة الطبية بنجاح.';
+  }catch(e){
+    console.error(e);
+    status.textContent='✗ تعذر حفظ الاستمارة الطبية: '+e.message;
+  }
+}
+function makeMedicalPDF(){
+  const s=getLoggedStudent();if(!s){alert('يرجى تسجيل الدخول أولاً.');return}
+  const esc=x=>String(x??'—').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+  const val=(id,u)=>{const x=$(id)?.value;if(x===null||x===undefined||x==='')return '—';return esc(x)+(u?' '+u:'')};
+  const w=window.open('','_blank');
+  if(!w){alert('يرجى السماح بالنوافذ المنبثقة لهذا الموقع لإنشاء PDF.');return}
+  const health=[
+    ['الطول',val('medHeight','cm')],['الوزن',val('medWeight','kg')],
+    ['معدل ضربات القلب',val('medHeartRate','bpm')],['VMA — السرعة الهوائية القصوى',val('medVma','km/h')]
+  ];
+  const fitness=[
+    ['العدو السريع 30 متر',val('medRun30m','s')],
+    ['القفز الأفقي',val('medHorizontalJump','cm')],
+    ['القفز العمودي',val('medVerticalJump','cm')],
+    ['رمي الكرة الطبية',val('medMedicineBall','m')],
+    ['المرونة جلوسًا',val('medFlexSit','cm')],
+    ['المرونة وقوفًا',val('medFlexStand','cm')],
+    ['التوازن الثابت',val('medBalance','s')],
+    ['تاريخ القياس',val('medDate','')]
+  ];
+  const table=rows=>'<table>'+rows.map(r=>'<tr><th>'+esc(r[0])+'</th><td>'+r[1]+'</td></tr>').join('')+'</table>';
+  w.document.write(`<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>الاستمارة الطبية - ${esc(s.full_name)}</title>
+<style>
+@page{size:A4;margin:10mm}*{box-sizing:border-box;print-color-adjust:exact;-webkit-print-color-adjust:exact}
+body{font-family:Tahoma,Arial,sans-serif;color:#1f2d35;margin:0;font-size:12px}
+.head{text-align:center;border:2px solid #0b6846;border-radius:12px;padding:12px;background:linear-gradient(135deg,#edf9f3,#eef7ff);border-bottom:5px solid #e3b83f}
+.head div{font-weight:800;line-height:1.5}.head h1{color:#075c40;font-size:22px;margin:7px 0 2px}
+.info{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:12px 0}.info div{padding:8px;border:1px solid #d1dfdb;border-radius:8px;background:#fff}
+.title{margin:10px 0 5px;padding:7px 10px;color:#fff;font-weight:800;background:linear-gradient(90deg,#0b6846,#1687a4);border-right:5px solid #e3b83f;border-radius:7px}
+table{width:100%;border-collapse:collapse;margin-bottom:7px}th,td{border:1px solid #c8d8e3;padding:8px}th{width:45%;background:#f0f7f4;color:#075c40}td{font-weight:700;background:#fff}
+.note{margin-top:12px;padding:9px;border:1px solid #e8d49b;background:#fff9e8;border-radius:8px}
+.footer{margin-top:18px;text-align:center;color:#68757b;font-size:9px}
+</style></head><body>
+<div class="head"><div>المملكة المغربية</div><div>وزارة التربية الوطنية والتعليم الأولي والرياضة</div><div>الأكاديمية الجهوية للتربية والتكوين لجهة سوس ماسة</div><div>المديرية الإقليمية اشتوكة أيت باها</div><div>الثانوية التأهيلية عقبة بن نافع</div><h1>المعلومات الطبية والبدنية للتلميذ</h1><div>الموسم الدراسي 2026-2027</div></div>
+<div class="info"><div><b>رقم التلميذ:</b> ${esc(s.student_number)}</div><div><b>الاسم الكامل:</b> ${esc(s.full_name)}</div><div><b>القسم:</b> ${esc(s.class_name)}</div><div><b>المستوى:</b> ${esc(s.current_level)}</div></div>
+<div class="title">❤️ القياسات والمؤشرات الصحية</div>${table(health)}
+<div class="title">🏃 الاختبارات البدنية</div>${table(fitness)}
+<div class="footer">وثيقة مستخرجة من فضاء التلميذ</div></body></html>`);
+  w.document.close();setTimeout(()=>{w.focus();w.print()},700);
+}
+
 (function(){
   function showLanding(){
     var s=document.getElementById('aqbaStart');
@@ -834,7 +965,55 @@ document.addEventListener('change',e=>{if(e.target.closest && e.target.closest('
     <button type="button" class="secondary" onclick="loadMyDataIntoForm()">عرض بياناتي في الاستمارة</button>
     <button type="button" class="light" onclick="studentLogout()">تسجيل الخروج</button>
   </div>
+
 </div>
+
+<!-- الاستمارة الطبية داخل نفس فضاء التلميذ -->
+<section id="medicalFormCard" class="card medical-card" style="display:none">
+  <div class="medical-top">
+    <div>
+      <div class="medical-kicker">الثانوية التأهيلية عقبة بن نافع</div>
+      <h2>🩺 الاستمارة الطبية والبدنية للتلميذ</h2>
+      <div class="medical-year">الموسم الدراسي 2026-2027</div>
+    </div>
+  </div>
+
+  <div id="medicalIdentity" class="medical-identity"></div>
+
+  <div class="medical-section-title">❤️ القياسات والمؤشرات الصحية</div>
+  <div class="medical-grid">
+    <div class="medical-field"><label>الطول</label><div class="unit-input"><input id="medHeight" type="number" step="0.1" min="0" readonly><span>cm</span></div></div>
+    <div class="medical-field"><label>الوزن</label><div class="unit-input"><input id="medWeight" type="number" step="0.1" min="0" readonly><span>kg</span></div></div>
+    <div class="medical-field"><label>معدل ضربات القلب</label><div class="unit-input"><input id="medHeartRate" type="number" min="0"><span>bpm</span></div></div>
+    <div class="medical-field"><label>VMA — السرعة الهوائية القصوى</label><div class="unit-input"><input id="medVma" type="number" step="0.01" min="0"><span>km/h</span></div></div>
+  </div>
+
+  <div class="medical-section-title">🏃 الاختبارات البدنية</div>
+  <div class="medical-grid">
+    <div class="medical-field"><label>العدو السريع 30 متر</label><div class="unit-input"><input id="medRun30m" type="number" step="0.01" min="0"><span>s</span></div></div>
+    <div class="medical-field"><label>القفز الأفقي</label><div class="unit-input"><input id="medHorizontalJump" type="number" step="0.1" min="0"><span>cm</span></div></div>
+    <div class="medical-field"><label>القفز العمودي</label><div class="unit-input"><input id="medVerticalJump" type="number" step="0.1" min="0"><span>cm</span></div></div>
+    <div class="medical-field"><label>رمي الكرة الطبية</label><div class="unit-input"><input id="medMedicineBall" type="number" step="0.01" min="0"><span>m</span></div></div>
+    <div class="medical-field"><label>المرونة جلوسًا</label><div class="unit-input"><input id="medFlexSit" type="number" step="0.1"><span>cm</span></div></div>
+    <div class="medical-field"><label>المرونة وقوفًا</label><div class="unit-input"><input id="medFlexStand" type="number" step="0.1"><span>cm</span></div></div>
+    <div class="medical-field"><label>التوازن الثابت</label><div class="unit-input"><input id="medBalance" type="number" step="0.01" min="0"><span>s</span></div></div>
+    <div class="medical-field"><label>تاريخ القياس</label><input id="medDate" type="date"></div>
+  </div>
+
+  <div class="medical-section-title">🏠 معلومات صحية إضافية</div>
+  <div class="medical-grid">
+    <div class="medical-field"><label>هل تعاني من مرض؟</label><select id="medIllness"><option value="">اختر</option><option>نعم</option><option>لا</option></select></div>
+    <div class="medical-field"><label>تفاصيل الحالة / الأدوية عند الحاجة</label><textarea id="medIllnessDetails"></textarea></div>
+    <div class="medical-field medical-wide"><label>مشكلة صحية أو شخصية أخرى</label><textarea id="medPersonalProblem"></textarea></div>
+  </div>
+
+  <div class="actions medical-actions">
+    <button type="button" class="primary" onclick="saveMedicalForm()">💾 حفظ الاستمارة الطبية</button>
+    <button type="button" class="secondary" onclick="makeMedicalPDF()">📄 تحميل PDF</button>
+    <button type="button" class="light" onclick="closeMedicalForm()">↩ العودة إلى فضاء التلميذ</button>
+  </div>
+  <div id="medicalStatus" class="status"></div>
+</section>
 
 <script>document.addEventListener('DOMContentLoaded',restoreStudentSession);</script>
 </body>
