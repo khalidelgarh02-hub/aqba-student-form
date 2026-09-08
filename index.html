@@ -145,6 +145,9 @@ async function sendStudentToDatabase(d) {
 </script>
 
 
+<style>
+.teacher-evaluation{margin-top:18px}.teacher-evaluation .medical-section-title{margin-top:0}.teacher-rating-card{border:1px solid #c8d8e3;border-radius:10px;padding:11px;background:linear-gradient(135deg,#f7fbff,#f1faf6);display:flex;align-items:center;justify-content:space-between;gap:12px}.teacher-rating-card .rating-name{font-weight:800;color:#075f3d}.teacher-rating-card .rating-value{font-weight:900;padding:6px 12px;border-radius:8px;background:#fff;border:1px solid #c8d8e3}.teacher-note{margin-top:12px;padding:12px;border:1px solid #e8d49b;border-radius:10px;background:#fff9e8;line-height:1.7}.teacher-note strong{color:#8a6500;display:block;margin-bottom:5px}
+</style>
 </head>
 <body>
 <div id="aqbaVersion" style="position:fixed;bottom:6px;left:8px;z-index:9999;font-size:10px;opacity:.45;direction:ltr">AQBA-V22</div>
@@ -816,6 +819,43 @@ async function loadMedicalForm(){
   const s=getLoggedStudent(); if(!s)return;
   $('medHeight').value=s.height??'';
   $('medWeight').value=s.weight??'';
+  const hideTeacherEvaluation=()=>{
+    const sec=$('teacherEvaluationSection'); if(sec)sec.style.display='none';
+    if($('teacherRatingsGrid'))$('teacherRatingsGrid').innerHTML='';
+    if($('teacherNoteText'))$('teacherNoteText').textContent='';
+  };
+  const showTeacherEvaluation=(m)=>{
+    const sec=$('teacherEvaluationSection'),grid=$('teacherRatingsGrid');
+    if(!sec||!grid)return;
+    let data={teacher_note:'',ratings:{}};
+    try{
+      if(m?.notes){
+        const parsed=JSON.parse(m.notes);
+        if(parsed&&typeof parsed==='object'&&(parsed.teacher_note!==undefined||parsed.ratings!==undefined)) data=parsed;
+        else data.teacher_note=m.notes;
+      }
+    }catch(e){data.teacher_note=m?.notes||''}
+    const labels={
+      heart_rate:'معدل ضربات القلب',vma:'VMA — السرعة الهوائية القصوى',run_30m:'العدو السريع 30 متر',
+      horizontal_jump:'القفز الأفقي',vertical_jump:'القفز العمودي',medicine_ball_throw:'رمي الكرة الطبية',
+      flexibility_sitting:'المرونة جلوسًا',flexibility_standing:'المرونة وقوفًا',static_balance:'التوازن الثابت'
+    };
+    const ratings=data.ratings||{};
+    window.__teacherMedicalData=data;
+    const entries=Object.keys(labels).map(k=>[k,ratings[k]]).filter(x=>x[1]);
+    if(entries.length){
+      grid.innerHTML=entries.map(([k,v])=>'<div class="teacher-rating-card"><span class="rating-name">'+escapeHtml(labels[k])+'</span><span class="rating-value">'+escapeHtml(v)+'</span></div>').join('');
+      sec.style.display='block';
+    }else{
+      grid.innerHTML='<div class="teacher-rating-card"><span class="rating-name">تقييم الأستاذ</span><span class="rating-value">لم يتم إدخال تقييم بعد</span></div>';
+      sec.style.display='block';
+    }
+    if($('teacherNoteBox')){
+      if(data.teacher_note){$('teacherNoteText').textContent=data.teacher_note;$('teacherNoteBox').style.display='block';}
+      else $('teacherNoteBox').style.display='none';
+    }
+  };
+  hideTeacherEvaluation();
   try{
     const r=await fetch(AQBA_SUPABASE_URL+'/rest/v1/student_medical_records?account_user_id=eq.'+encodeURIComponent(s.account_user_id||s.id)+'&select=heart_rate,vma,run_30m,horizontal_jump,vertical_jump,medicine_ball_throw,flexibility_sitting,flexibility_standing,static_balance,measured_at,notes&limit=1',{
       headers:{apikey:AQBA_SUPABASE_ANON_KEY,Authorization:'Bearer '+(getStudentAccessToken()||AQBA_SUPABASE_ANON_KEY)}
@@ -824,6 +864,7 @@ async function loadMedicalForm(){
     const a=await r.json(),m=a[0]; if(!m)return;
     const map={medHeartRate:'heart_rate',medVma:'vma',medRun30m:'run_30m',medHorizontalJump:'horizontal_jump',medVerticalJump:'vertical_jump',medMedicineBall:'medicine_ball_throw',medFlexSit:'flexibility_sitting',medFlexStand:'flexibility_standing',medBalance:'static_balance',medDate:'measured_at'};
     Object.keys(map).forEach(id=>{if($(id)&&m[map[id]]!=null)$(id).value=m[map[id]]});
+    showTeacherEvaluation(m);
   }catch(e){console.warn('loadMedicalForm',e)}
 }
 async function saveMedicalForm(){
@@ -868,6 +909,9 @@ function makeMedicalPDF(){
     ['تاريخ القياس',val('medDate','')]
   ];
   const table=rows=>'<table>'+rows.map(r=>'<tr><th>'+esc(r[0])+'</th><td>'+r[1]+'</td></tr>').join('')+'</table>';
+  const teacherData=window.__teacherMedicalData||{teacher_note:'',ratings:{}};
+  const ratingLabels={heart_rate:'معدل ضربات القلب',vma:'VMA — السرعة الهوائية القصوى',run_30m:'العدو السريع 30 متر',horizontal_jump:'القفز الأفقي',vertical_jump:'القفز العمودي',medicine_ball_throw:'رمي الكرة الطبية',flexibility_sitting:'المرونة جلوسًا',flexibility_standing:'المرونة وقوفًا',static_balance:'التوازن الثابت'};
+  const ratingRows=Object.keys(ratingLabels).filter(k=>teacherData.ratings?.[k]).map(k=>[ratingLabels[k],esc(teacherData.ratings[k])]);
   w.document.write(`<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>الاستمارة الطبية - ${esc(s.full_name)}</title>
 <style>
 @page{size:A4;margin:10mm}*{box-sizing:border-box;print-color-adjust:exact;-webkit-print-color-adjust:exact}
@@ -1005,6 +1049,12 @@ table{width:100%;border-collapse:collapse;margin-bottom:7px}th,td{border:1px sol
     <div class="medical-field"><label>هل تعاني من مرض؟</label><select id="medIllness"><option value="">اختر</option><option>نعم</option><option>لا</option></select></div>
     <div class="medical-field"><label>تفاصيل الحالة / الأدوية عند الحاجة</label><textarea id="medIllnessDetails"></textarea></div>
     <div class="medical-field medical-wide"><label>مشكلة صحية أو شخصية أخرى</label><textarea id="medPersonalProblem"></textarea></div>
+  </div>
+
+  <div id="teacherEvaluationSection" class="teacher-evaluation" style="display:none">
+    <div class="medical-section-title">👨‍🏫 تقييم الأستاذ</div>
+    <div id="teacherRatingsGrid" class="medical-grid"></div>
+    <div id="teacherNoteBox" class="teacher-note" style="display:none"><strong>📝 ملاحظة الأستاذ:</strong><div id="teacherNoteText"></div></div>
   </div>
 
   <div class="actions medical-actions">
