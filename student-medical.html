@@ -1,30 +1,97 @@
-<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>الملف الطبي والبدني — بوابة التلميذ</title><style>*{box-sizing:border-box}body{margin:0;background:#f3f6f8;color:#17212b;font-family:Tahoma,Arial,sans-serif}.wrap{max-width:1000px;margin:auto;padding:18px}.card{background:#fff;border:1px solid #dfe6eb;border-radius:16px;box-shadow:0 5px 20px #0000000b;padding:18px;margin-bottom:16px}.brand{border-top:5px solid #0b7a4b;text-align:center}.brand h1{color:#c92323;margin:4px}.brand h2{color:#1171bd;margin:4px}.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}label{font-weight:700;display:block;margin-bottom:5px}input,textarea{width:100%;padding:11px;border:1px solid #cbd3da;border-radius:9px;font-size:14px}textarea{min-height:90px;resize:vertical}.actions{display:flex;gap:8px;flex-wrap:wrap}.btn{border:0;border-radius:9px;padding:11px 16px;font-weight:700;cursor:pointer}.primary{background:#0b7a4b;color:#fff}.light{background:#e9eef2}.error{color:#b52a2a;font-weight:700}.success{color:#17683e;font-weight:700}.muted{color:#66727d;font-size:13px}.hidden{display:none!important}.section{margin-top:16px}.section h3{background:#eef7f2;color:#126b46;border-right:4px solid #0b7a4b;padding:9px;border-radius:6px}@media(max-width:700px){.grid{grid-template-columns:1fr}}</style></head><body><main class="wrap"><div class="card brand"><h1>الملف الطبي والبدني للتلميذ</h1><h2>الثانوية التأهيلية عقبة بن نافع</h2><div>الموسم الدراسي 2026-2027</div></div><div id="login" class="card" style="max-width:470px;margin:22px auto">
-<h2 style="color:#0b6846">🔐 دخول التلميذ</h2>
-<p class="muted">استعمل نفس البريد الإلكتروني وكلمة المرور الخاصة بحسابك في بوابة التلميذ.</p>
-<label>البريد الإلكتروني</label><input id="email" type="email" autocomplete="username">
-<label>كلمة المرور</label><input id="password" type="password" autocomplete="current-password">
-<button id="loginBtn" class="btn primary" style="margin-top:14px;width:100%">دخول</button>
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>الملف الطبي والبدني — بوابة التلميذ</title>
+<style>
+body{margin:0;background:#f3f6f8;color:#17212b;font-family:Tahoma,Arial,sans-serif}.wrap{max-width:950px;margin:auto;padding:18px}
+.card{background:#fff;border:1px solid #dfe6eb;border-radius:16px;padding:18px;margin-bottom:16px;box-shadow:0 5px 20px #0001}
+.brand{text-align:center;border-top:5px solid #0b7a4b}.brand h1{color:#c92323}.brand h2{color:#1171bd}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}label{font-weight:700;display:block;margin:7px 0}input,textarea{width:100%;padding:11px;border:1px solid #cbd3da;border-radius:9px;font-size:14px;box-sizing:border-box}textarea{min-height:90px}
+button{border:0;border-radius:9px;padding:11px 18px;font-weight:700;cursor:pointer}.primary{background:#0b7a4b;color:white}.light{background:#e9eef2}.error{color:#b52a2a;font-weight:700}.success{color:#17683e;font-weight:700}.muted{color:#66727d;font-size:13px}.hidden{display:none!important}.login{max-width:470px;margin:8vh auto}
+h3{background:#eef7f2;color:#126b46;padding:9px;border-right:4px solid #0b7a4b;border-radius:6px}@media(max-width:700px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body><main class="wrap">
+<div class="card brand"><h1>الملف الطبي والبدني للتلميذ</h1><h2>الثانوية التأهيلية عقبة بن نافع</h2><div>الموسم الدراسي 2026-2027</div></div>
+
+<div id="login" class="card login">
+<h2 style="color:#0b6846;text-align:center">🔐 دخول التلميذ</h2>
+<p class="muted">استعمل نفس رقم التلميذ وكلمة المرور الموجودين في بوابة التلميذ الأصلية.</p>
+<label>رقم التلميذ</label><input id="studentNumber" placeholder="AQBA-2026-0001">
+<label>كلمة المرور</label><input id="studentPassword" type="password">
+<button id="loginBtn" class="primary" style="width:100%;margin-top:12px">دخول</button>
 <div id="loginMsg" style="margin-top:10px"></div>
 </div>
-<div id="msg" class="card muted hidden">جارٍ تحميل ملف التلميذ...</div><section id="app" class="hidden"><div class="card"><div id="identity"></div><div class="section"><h3>القياسات والمؤشرات الصحية</h3><div class="grid"><div><label>معدل ضربات القلب</label><input id="heart_rate" type="number"></div><div><label>VMA</label><input id="vma" type="number" step="0.01"></div></div></div><div class="section"><h3>الاختبارات البدنية</h3><div class="grid"><div><label>العدو 30 متر</label><input id="run_30m" type="number" step="0.01"></div><div><label>القفز الأفقي</label><input id="horizontal_jump" type="number" step="0.01"></div><div><label>القفز العمودي</label><input id="vertical_jump" type="number" step="0.01"></div><div><label>رمي الكرة الطبية</label><input id="medicine_ball_throw" type="number" step="0.01"></div><div><label>المرونة جلوساً</label><input id="flexibility_sitting" type="number" step="0.01"></div><div><label>المرونة وقوفاً</label><input id="flexibility_standing" type="number" step="0.01"></div><div><label>التوازن الثابت</label><input id="static_balance" type="number" step="0.01"></div><div><label>تاريخ القياس</label><input id="measured_at" type="date"></div></div></div><div class="section"><h3>ملاحظات</h3><textarea id="notes"></textarea></div><div class="actions" style="margin-top:16px"><button class="btn primary" id="save">حفظ الملف الطبي</button><button class="btn light" onclick="history.back()">العودة</button></div><div id="saveMsg" style="margin-top:10px"></div></div></section></main><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script>
+
+<section id="app" class="hidden">
+<div class="card"><div id="identity"></div><button id="logout" class="light" style="margin-top:10px">تسجيل الخروج</button></div>
+<div class="card"><h2 style="color:#0b6846">📋 الملف الطبي والبدني</h2>
+<h3>القياسات والمؤشرات الصحية</h3><div class="grid">
+<div><label>معدل ضربات القلب</label><input id="heart_rate" type="number"></div>
+<div><label>VMA</label><input id="vma" type="number" step="0.01"></div></div>
+<h3>الاختبارات البدنية</h3><div class="grid">
+<div><label>العدو 30 متر</label><input id="run_30m" type="number" step="0.01"></div>
+<div><label>القفز الأفقي</label><input id="horizontal_jump" type="number" step="0.01"></div>
+<div><label>القفز العمودي</label><input id="vertical_jump" type="number" step="0.01"></div>
+<div><label>رمي الكرة الطبية</label><input id="medicine_ball_throw" type="number" step="0.01"></div>
+<div><label>المرونة جلوساً</label><input id="flexibility_sitting" type="number" step="0.01"></div>
+<div><label>المرونة وقوفاً</label><input id="flexibility_standing" type="number" step="0.01"></div>
+<div><label>التوازن الثابت</label><input id="static_balance" type="number" step="0.01"></div>
+<div><label>تاريخ القياس</label><input id="measured_at" type="date"></div></div>
+<h3>ملاحظات</h3><textarea id="notes"></textarea>
+<div style="margin-top:15px"><button id="save" class="primary">حفظ الملف الطبي</button></div>
+<div id="saveMsg" style="margin-top:10px"></div>
+</div></section></main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
 const URL='https://jwzebyfhsfszpgswnbyh.supabase.co';
 const KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp3emVieWZoc2ZzenBnc3duYnloIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc5OTg2OTgsImV4cCI6MjEwMzU3NDY5OH0.fh5DvtvMMZn3rPkFnJsVokJJPfJQLZYWGrQsEGrMQbc';
-const sb=supabase.createClient(URL,KEY); const $=x=>document.getElementById(x); let student;
+const sb=supabase.createClient(URL,KEY),$=x=>document.getElementById(x);let student;
+const fields=['heart_rate','vma','run_30m','horizontal_jump','vertical_jump','medicine_ball_throw','flexibility_sitting','flexibility_standing','static_balance','measured_at','notes'];
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]))}
-function set(id,v){$(id).value=v??''}
-async function loadStudent(session){
- const {data,error}=await sb.from('students').select('id,student_number,full_name,full_name_fr,class_name,current_level,height,weight,account_user_id').eq('account_user_id',session.user.id).maybeSingle();
- if(error||!data){$('loginMsg').className='error';$('loginMsg').textContent='تعذر العثور على ملف التلميذ المرتبط بهذا الحساب.';await sb.auth.signOut();return}
- student=data;
- const {data:m,error:me}=await sb.from('student_medical_records').select('*').eq('account_user_id',session.user.id).maybeSingle();
- if(me){$('loginMsg').className='error';$('loginMsg').textContent='تعذر تحميل الملف الطبي: '+me.message;return}
- $('identity').innerHTML='<b>'+esc(student.full_name)+'</b> — '+esc(student.student_number)+' — '+esc(student.class_name||'')+'<div class="muted">الطول: '+(student.height??'—')+' cm | الوزن: '+(student.weight??'—')+' kg</div>';
- $('login').classList.add('hidden');$('app').classList.remove('hidden');
- if(m)['heart_rate','vma','run_30m','horizontal_jump','vertical_jump','medicine_ball_throw','flexibility_sitting','flexibility_standing','static_balance','measured_at','notes'].forEach(k=>set(k,m[k]));
+function norm(v){return String(v||'').trim().toUpperCase().replace(/\s+/g,'')}
+
+async function login(){
+ const n=norm($('studentNumber').value),p=$('studentPassword').value.trim();
+ $('loginMsg').className='';$('loginMsg').textContent='جارٍ التحقق...';
+ if(!/^AQBA-2026-\d+$/.test(n)){ $('loginMsg').className='error';$('loginMsg').textContent='رقم التلميذ غير صحيح. مثال: AQBA-2026-0001';return}
+ if(!p){$('loginMsg').className='error';$('loginMsg').textContent='أدخل كلمة المرور.';return}
+ $('loginBtn').disabled=true;
+ try{
+  const r=await fetch(URL+'/functions/v1/student-login',{method:'POST',mode:'cors',
+   headers:{apikey:KEY,Authorization:'Bearer '+KEY,'Content-Type':'application/json',Accept:'application/json'},
+   body:JSON.stringify({student_number:n,password:p})});
+  let d={};try{d=await r.json()}catch(e){}
+  if(!r.ok||!d.ok||!d.student)throw Error(d.error||d.message||('تعذر تسجيل الدخول (HTTP '+r.status+')'));
+  if(!d.access_token||!d.refresh_token)throw Error('خدمة دخول التلميذ لم تُرجع جلسة مصادقة صالحة.');
+  const s=await sb.auth.setSession({access_token:d.access_token,refresh_token:d.refresh_token});
+  if(s.error)throw s.error;
+  await load();
+ }catch(e){$('loginMsg').className='error';$('loginMsg').textContent=e.message||'تعذر تسجيل الدخول.'}
+ finally{$('loginBtn').disabled=false}
 }
-async function boot(){const {data:{session}}=await sb.auth.getSession();if(session)await loadStudent(session)}
-$('loginBtn').onclick=async()=>{ $('loginMsg').className='';$('loginMsg').textContent='جارٍ تسجيل الدخول...';const {data,error}=await sb.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error){$('loginMsg').className='error';$('loginMsg').textContent='تعذر الدخول: '+error.message;return}await loadStudent(data.session)};
-$('password').onkeydown=e=>{if(e.key==='Enter')$('loginBtn').click()};
-$('save').onclick=async()=>{const {data:{session}}=await sb.auth.getSession();if(!session)return;const body={};['heart_rate','vma','run_30m','horizontal_jump','vertical_jump','medicine_ball_throw','flexibility_sitting','flexibility_standing','static_balance','measured_at','notes'].forEach(k=>body[k]=$(k).value||null);const {error}=await sb.from('student_medical_records').upsert({student_id:student.id,account_user_id:session.user.id,student_number:student.student_number,...body},{onConflict:'student_id'});$('saveMsg').className=error?'error':'success';$('saveMsg').textContent=error?error.message:'تم حفظ الملف الطبي بنجاح.'};
-boot();
+async function load(){
+ const {data:{session}}=await sb.auth.getSession();
+ if(!session)throw Error('لم يتم إنشاء جلسة التلميذ.');
+ const {data:s,error}=await sb.from('students').select('id,student_number,full_name,full_name_fr,class_name,current_level,height,weight,account_user_id').eq('account_user_id',session.user.id).maybeSingle();
+ if(error||!s)throw Error('تم الدخول، لكن لم يتم العثور على ملف التلميذ المرتبط بالحساب.');
+ student=s;
+ const {data:m,error:me}=await sb.from('student_medical_records').select('*').eq('account_user_id',session.user.id).maybeSingle();
+ if(me)throw Error('تعذر قراءة الملف الطبي: '+me.message);
+ $('identity').innerHTML='<b>'+esc(s.full_name)+'</b> — '+esc(s.student_number)+' — '+esc(s.class_name||'')+'<div class="muted">المستوى: '+esc(s.current_level||'—')+' | الطول: '+(s.height??'—')+' cm | الوزن: '+(s.weight??'—')+' kg</div>';
+ fields.forEach(k=>$(k).value=m?.[k]??'');
+ $('login').classList.add('hidden');$('app').classList.remove('hidden');
+}
+$('loginBtn').onclick=login;$('studentPassword').onkeydown=e=>{if(e.key==='Enter')login()};
+$('logout').onclick=async()=>{await sb.auth.signOut();location.reload()};
+$('save').onclick=async()=>{
+ const {data:{session}}=await sb.auth.getSession();if(!session)return;
+ const body={student_id:student.id,account_user_id:session.user.id,student_number:student.student_number};
+ fields.forEach(k=>body[k]=$(k).value||null);
+ const {error}=await sb.from('student_medical_records').upsert(body,{onConflict:'student_id'});
+ $('saveMsg').className=error?'error':'success';$('saveMsg').textContent=error?('تعذر الحفظ: '+error.message):'تم حفظ الملف الطبي بنجاح.';
+};
 </script></body></html>
