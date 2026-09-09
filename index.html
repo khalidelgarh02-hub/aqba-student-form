@@ -343,12 +343,6 @@ async function sendStudentToDatabase(d) {
   <div class="field"><label>الرياضة</label><input id="competitionSport"></div>
 </div>
 
-<div class="medical-hidden-fields" style="display:none!important">
-  <input id="heightHiddenCompat">
-  <input id="weightHiddenCompat">
-  <input id="illnessDetails">
-  <input id="personalProblem">
-</div>
 <div class="medical-link-card">
   <div class="medical-link-icon">🩺</div>
   <div>
@@ -416,7 +410,6 @@ let password=localStorage.getItem('aqba_teacher_password')||'1234';
 $('sport').addEventListener('change',()=> $('otherSportWrap').classList.toggle('hidden',$('sport').value!=='رياضة أخرى'));
 $('className').addEventListener('change',()=> $('otherClassWrap').classList.toggle('hidden',$('className').value!=='قسم آخر'));
 document.querySelectorAll('input[name="represented"]').forEach(x=>x.addEventListener('change',()=> $('competitionWrap').classList.toggle('hidden',x.value!=='نعم' || !x.checked)));
-document.querySelectorAll('input[name="illness"]').forEach(x=>x.addEventListener('change',()=> $('illnessWrap').classList.toggle('hidden',x.value!=='نعم' || !x.checked)));
 
 $('photo').addEventListener('change',e=>{
  const f=e.target.files && e.target.files[0];
@@ -500,7 +493,7 @@ function collect(){
   photo:$('photoPreview').src||'',distance:val('distance'),duration:val('duration'),transport:val('transport'),fatherJob:val('fatherJob'),motherJob:val('motherJob'),
   currentLevel:val('currentLevel'),oldLevel:val('oldLevel'),siblings:val('siblings'),brothers:val('brothers'),sisters:val('sisters'),height:decimalValue('height'),weight:decimalValue('weight'),
   sport:val('sport'),otherSport:val('otherSport'),represented:getRadio('represented'),competitionName:val('competitionName'),competitionLevel:val('competitionLevel'),
-  competitionYear:val('competitionYear'),competitionSport:val('competitionSport'),illness:getRadio('illness'),illnessDetails:val('illnessDetails'),personalProblem:val('personalProblem'),
+  competitionYear:val('competitionYear'),competitionSport:val('competitionSport'),
   contractAccept:$('contractAccept').checked,studentSig:$('studentSig').toDataURL(),teacherSig:$('teacherSig').toDataURL(),
   savedAt:new Date().toISOString()
  };
@@ -508,15 +501,14 @@ function collect(){
 function apply(d){
  if(!d || typeof d!=='object') return;
  // لا نعيّن أي قيمة إلى input[type=file]؛ المتصفح يمنع ذلك أمنياً.
- const allowed=['fullName','fullNameFr','birthDate','birthPlace','address','className','otherClass','distance','duration','transport','fatherJob','motherJob','currentLevel','oldLevel','siblings','brothers','sisters','height','weight','sport','otherSport','competitionName','competitionLevel','competitionYear','competitionSport','illnessDetails','personalProblem'];
+ const allowed=['fullName','fullNameFr','birthDate','birthPlace','address','className','otherClass','distance','duration','transport','fatherJob','motherJob','currentLevel','oldLevel','siblings','brothers','sisters','height','weight','sport','otherSport','competitionName','competitionLevel','competitionYear','competitionSport'];
  allowed.forEach(k=>{const el=$(k); if(el && el.type!=='file' && d[k]!==undefined && d[k]!==null) el.value=String(d[k]);});
  if(d.represented){const r=[...document.querySelectorAll('input[name=represented]')].find(x=>x.value===String(d.represented));if(r)r.checked=true}
- if(d.illness){const r=[...document.querySelectorAll('input[name=illness]')].find(x=>x.value===String(d.illness));if(r)r.checked=true}
  const ca=$('contractAccept'); if(ca) ca.checked=!!d.contractAccept;
  const pi=$('photoPreview'),pt=$('photoText');
  if(pi && typeof d.photo==='string' && d.photo){pi.src=d.photo;pi.style.display='block';if(pt)pt.style.display='none';}
  ['studentSig','teacherSig'].forEach(id=>{if(typeof d[id]==='string' && d[id].startsWith('data:')){const img=new Image();img.onload=()=>{const c=$(id);if(!c)return;const ctx=c.getContext('2d');ctx.clearRect(0,0,c.width,c.height);ctx.drawImage(img,0,0,c.width,c.height)};img.src=d[id];}});
- $('sport')?.dispatchEvent(new Event('change')); $('className')?.dispatchEvent(new Event('change')); document.querySelector('input[name=represented]:checked')?.dispatchEvent(new Event('change')); document.querySelector('input[name=illness]:checked')?.dispatchEvent(new Event('change'));
+ $('sport')?.dispatchEvent(new Event('change')); $('className')?.dispatchEvent(new Event('change')); document.querySelector('input[name=represented]:checked')?.dispatchEvent(new Event('change'));
 }
 $('studentForm').addEventListener('submit', async e=>{
  e.preventDefault();
@@ -570,7 +562,7 @@ async function makePDF(){
     'كل حصص التربية البدنية خاضعة للتنقيط وكل سلوك إيجابي أو سلبي يؤثر بشكل مباشر في النقطة النهائية للحلقة الدراسية.',
     'كل تجاوز أو إخلال بالقوانين المذكورة في هذا التعاقد يتعرض مرتكبه إلى الإجراءات التأديبية اللازمة ويبقى للأستاذ وللإدارة السلطة التقديرية لنوع هذه العقوبات والإجراءات.'
   ];
-  const page1=`<section class="page"><header class="head"><div>المملكة المغربية</div><div>وزارة التربية الوطنية والتعليم الأولي والرياضة</div><div>الأكاديمية الجهوية للتربية والتكوين لجهة سوس ماسة</div><div>المديرية الإقليمية اشتوكة أيت باها</div><div>الجمعية الرياضية للثانوية التأهيلية عقبة بن نافع</div><h1>الورقة الشخصية للتلميذ</h1><div class="year">الموسم الدراسي: 2026-2027</div></header><div class="section-title">1. المعلومات الشخصية</div><div class="personal"><div class="photo-wrap">${photo}</div><div class="fields"><div class="item"><b>الاسم الكامل:</b><span>${v(d.fullName)}</span></div><div class="item"><b>Nom et Prénom:</b><span>${v(d.fullNameFr)}</span></div><div class="item"><b>تاريخ الازدياد:</b><span>${v(d.birthDate)}</span></div><div class="item"><b>مكان الازدياد:</b><span>${v(d.birthPlace)}</span></div><div class="item wide"><b>العنوان الشخصي:</b><span>${v(d.address)}</span></div><div class="item"><b>القسم:</b><span>${v(d.className==='قسم آخر'?d.otherClass:d.className)}</span></div></div></div><div class="section-title">2. التنقل والأسرة والدراسة</div><div class="data-grid"><div class="item"><b>المسافة بين المؤسسة والمنزل:</b><span>${v(d.distance)}</span></div><div class="item"><b>المدة الزمنية للوصول:</b><span>${v(d.duration)}</span></div><div class="item"><b>وسيلة التنقل:</b><span>${v(d.transport)}</span></div><div class="item"><b>مهنة الأب:</b><span>${v(d.fatherJob)}</span></div><div class="item"><b>مهنة الأم:</b><span>${v(d.motherJob)}</span></div><div class="item"><b>المستوى الدراسي الحالي:</b><span>${v(d.currentLevel)}</span></div><div class="item"><b>المستوى الدراسي القديم:</b><span>${v(d.oldLevel)}</span></div><div class="item"><b>عدد الإخوة:</b><span>${v(d.siblings)}</span></div><div class="item"><b>عدد الذكور:</b><span>${v(d.brothers)}</span></div><div class="item"><b>عدد الإناث:</b><span>${v(d.sisters)}</span></div><div class="item"><b>الطول:</b><span>${v(d.height)} cm</span></div><div class="item"><b>الوزن:</b><span>${v(d.weight)} kg</span></div></div><div class="section-title">3. الرياضة المفضلة</div><div class="single-line"><b>الرياضة المفضلة:</b> ${v(d.sport==='رياضة أخرى'?d.otherSport:d.sport)}</div><div class="section-title">4. تمثيل المؤسسة في المسابقات الخارجية</div><div class="single-line"><b>سبق له تمثيل المؤسسة:</b> ${v(radio('represented'))}</div><div class="data-grid compact"><div class="item"><b>اسم المسابقة:</b><span>${v(d.competitionName)}</span></div><div class="item"><b>المستوى:</b><span>${v(d.competitionLevel)}</span></div><div class="item"><b>السنة:</b><span>${v(d.competitionYear)}</span></div><div class="item"><b>الرياضة:</b><span>${v(d.competitionSport)}</span></div></div><div class="section-title">5. الحالة الصحية</div><div class="data-grid"><div class="item"><b>هل توجد حالة مرضية؟</b><span>${v(radio('illness'))}</span></div><div class="item wide"><b>تفاصيل:</b><span>${v(d.illnessDetails)}</span></div><div class="item wide"><b>مشكلة شخصية/تربوية:</b><span>${v(d.personalProblem)}</span></div><div class="page-number">الصفحة 1 / 2</div></section>`;
+  const page1=`<section class="page"><header class="head"><div>المملكة المغربية</div><div>وزارة التربية الوطنية والتعليم الأولي والرياضة</div><div>الأكاديمية الجهوية للتربية والتكوين لجهة سوس ماسة</div><div>المديرية الإقليمية اشتوكة أيت باها</div><div>الجمعية الرياضية للثانوية التأهيلية عقبة بن نافع</div><h1>الورقة الشخصية للتلميذ</h1><div class="year">الموسم الدراسي: 2026-2027</div></header><div class="section-title">1. المعلومات الشخصية</div><div class="personal"><div class="photo-wrap">${photo}</div><div class="fields"><div class="item"><b>الاسم الكامل:</b><span>${v(d.fullName)}</span></div><div class="item"><b>Nom et Prénom:</b><span>${v(d.fullNameFr)}</span></div><div class="item"><b>تاريخ الازدياد:</b><span>${v(d.birthDate)}</span></div><div class="item"><b>مكان الازدياد:</b><span>${v(d.birthPlace)}</span></div><div class="item wide"><b>العنوان الشخصي:</b><span>${v(d.address)}</span></div><div class="item"><b>القسم:</b><span>${v(d.className==='قسم آخر'?d.otherClass:d.className)}</span></div></div></div><div class="section-title">2. التنقل والأسرة والدراسة</div><div class="data-grid"><div class="item"><b>المسافة بين المؤسسة والمنزل:</b><span>${v(d.distance)}</span></div><div class="item"><b>المدة الزمنية للوصول:</b><span>${v(d.duration)}</span></div><div class="item"><b>وسيلة التنقل:</b><span>${v(d.transport)}</span></div><div class="item"><b>مهنة الأب:</b><span>${v(d.fatherJob)}</span></div><div class="item"><b>مهنة الأم:</b><span>${v(d.motherJob)}</span></div><div class="item"><b>المستوى الدراسي الحالي:</b><span>${v(d.currentLevel)}</span></div><div class="item"><b>المستوى الدراسي القديم:</b><span>${v(d.oldLevel)}</span></div><div class="item"><b>عدد الإخوة:</b><span>${v(d.siblings)}</span></div><div class="item"><b>عدد الذكور:</b><span>${v(d.brothers)}</span></div><div class="item"><b>عدد الإناث:</b><span>${v(d.sisters)}</span></div><div class="item"><b>الطول:</b><span>${v(d.height)} cm</span></div><div class="item"><b>الوزن:</b><span>${v(d.weight)} kg</span></div></div><div class="section-title">3. الرياضة المفضلة</div><div class="single-line"><b>الرياضة المفضلة:</b> ${v(d.sport==='رياضة أخرى'?d.otherSport:d.sport)}</div><div class="section-title">4. تمثيل المؤسسة في المسابقات الخارجية</div><div class="single-line"><b>سبق له تمثيل المؤسسة:</b> ${v(radio('represented'))}</div><div class="data-grid compact"><div class="item"><b>اسم المسابقة:</b><span>${v(d.competitionName)}</span></div><div class="item"><b>المستوى:</b><span>${v(d.competitionLevel)}</span></div><div class="item"><b>السنة:</b><span>${v(d.competitionYear)}</span></div><div class="item"><b>الرياضة:</b><span>${v(d.competitionSport)}</span></div></div><div class="page-number">الصفحة 1 / 2</div></section>`;
   const page2=`<section class="page page2"><header class="head small-head"><div>المملكة المغربية</div><div>وزارة التربية الوطنية والتعليم الأولي والرياضة</div><div>الأكاديمية الجهوية للتربية والتكوين لجهة سوس ماسة</div><div>المديرية الإقليمية اشتوكة أيت باها</div><div>الجمعية الرياضية للثانوية التأهيلية عقبة بن نافع</div><h1>التعاقد البيداغوجي والتوقيعات</h1></header><div class="section-title">6. التعاقد البيداغوجي لمادة التربية البدنية والرياضية</div><ol class="contract-list">${contract.map(x=>`<li>${esc(x)}</li>`).join('')}</ol><div class="accept">☑ أقر أنني اطلعت على بنود التعاقد البيداغوجي وألتزم باحترامها.</div><div class="section-title">7. التوقيع الإلكتروني</div><div class="signatures"><div class="signature"><b>إمضاء التلميذ</b><div class="sig-area">${sigStudent}</div></div><div class="signature"><b>إمضاء الأستاذ المؤطر</b><div class="sig-area">${sigTeacher}</div></div></div><div class="student-summary"><b>رقم التلميذ:</b> ${v(d.studentNumber)} &nbsp;&nbsp; <b>الاسم:</b> ${v(d.fullName)}</div><div class="page-number">الصفحة 2 / 2</div></section>`;
   // إنشاء نسخة A4 مستقلة للطباعة/الحفظ كـ PDF.
   // هذه الطريقة لا تعتمد على مكتبة خارجية، ولذلك تعمل حتى عند ضعف الشبكة.
@@ -727,7 +719,7 @@ function showStudentProfile(s){
     ['المستوى الدراسي',s.current_level],['الرياضة المفضلة',s.favorite_sport==='رياضة أخرى'?s.other_sport:s.favorite_sport],
     ['المسافة',s.distance],['مدة الوصول',s.travel_time],['وسيلة التنقل',s.transport],
     ['مهنة الأب',s.father_job],['مهنة الأم',s.mother_job],['عدد الإخوة',s.siblings],
-    ['الطول',s.height],['الوزن',s.weight],['حالة صحية',s.health_status]
+    ['الطول',s.height],['الوزن',s.weight]
   ];
   $('profileGrid').innerHTML=items.map(([k,v])=>`<div class="profile-item"><b>${escapeHtml(k)}</b>${escapeHtml(v||'—')}</div>`).join('');
   $('studentProfile').style.display='block';
@@ -812,13 +804,18 @@ function medicalValues(){
     flexibility_standing:$('medFlexStand').value||null,
     static_balance:$('medBalance').value||null,
     measured_at:$('medDate').value||null,
-    notes:null
+    health_status:$('medIllness').value||null,
+    illness_details:$('medIllnessDetails').value||null,
+    personal_problem:$('medPersonalProblem').value||null
   };
 }
 async function loadMedicalForm(){
   const s=getLoggedStudent(); if(!s)return;
   $('medHeight').value=s.height??'';
   $('medWeight').value=s.weight??'';
+  $('medIllness').value=s.health_status??'';
+  $('medIllnessDetails').value='';
+  $('medPersonalProblem').value='';
   const hideTeacherEvaluation=()=>{
     const sec=$('teacherEvaluationSection'); if(sec)sec.style.display='none';
     if($('teacherRatingsGrid'))$('teacherRatingsGrid').innerHTML='';
@@ -827,11 +824,11 @@ async function loadMedicalForm(){
   const showTeacherEvaluation=(m)=>{
     const sec=$('teacherEvaluationSection'),grid=$('teacherRatingsGrid');
     if(!sec||!grid)return;
-    let data={teacher_note:'',ratings:{}};
+    let data={teacher_note:'',ratings:{},health_status:'',illness_details:'',personal_problem:''};
     try{
       if(m?.notes){
         const parsed=JSON.parse(m.notes);
-        if(parsed&&typeof parsed==='object'&&(parsed.teacher_note!==undefined||parsed.ratings!==undefined)) data=parsed;
+        if(parsed&&typeof parsed==='object') data={...data,...parsed};
         else data.teacher_note=m.notes;
       }
     }catch(e){data.teacher_note=m?.notes||''}
@@ -864,6 +861,16 @@ async function loadMedicalForm(){
     const a=await r.json(),m=a[0]; if(!m)return;
     const map={medHeartRate:'heart_rate',medVma:'vma',medRun30m:'run_30m',medHorizontalJump:'horizontal_jump',medVerticalJump:'vertical_jump',medMedicineBall:'medicine_ball_throw',medFlexSit:'flexibility_sitting',medFlexStand:'flexibility_standing',medBalance:'static_balance',medDate:'measured_at'};
     Object.keys(map).forEach(id=>{if($(id)&&m[map[id]]!=null)$(id).value=m[map[id]]});
+    try{
+      if(m.notes){
+        const parsed=JSON.parse(m.notes);
+        if(parsed&&typeof parsed==='object'){
+          if($('medIllness'))$('medIllness').value=parsed.health_status??$('medIllness').value;
+          if($('medIllnessDetails'))$('medIllnessDetails').value=parsed.illness_details??'';
+          if($('medPersonalProblem'))$('medPersonalProblem').value=parsed.personal_problem??'';
+        }
+      }
+    }catch(_){ }
     showTeacherEvaluation(m);
   }catch(e){console.warn('loadMedicalForm',e)}
 }
@@ -874,7 +881,21 @@ async function saveMedicalForm(){
   if(!getStudentAccessToken()){status.textContent='✗ انتهت جلسة التلميذ. يرجى تسجيل الخروج ثم الدخول من جديد.';return}
   status.textContent='⏳ جارٍ حفظ الاستمارة الطبية...';
   const v=medicalValues();
-  const body={student_id:s.id,account_user_id:s.account_user_id,student_number:s.student_number,...v};
+  const existing=window.__teacherMedicalData||{teacher_note:'',ratings:{}};
+  const notesPayload={
+    teacher_note:existing.teacher_note||'',
+    ratings:existing.ratings||{},
+    health_status:v.health_status||'',
+    illness_details:v.illness_details||'',
+    personal_problem:v.personal_problem||''
+  };
+  const body={
+    student_id:s.id,account_user_id:s.account_user_id,student_number:s.student_number,
+    heart_rate:v.heart_rate,vma:v.vma,run_30m:v.run_30m,horizontal_jump:v.horizontal_jump,
+    vertical_jump:v.vertical_jump,medicine_ball_throw:v.medicine_ball_throw,
+    flexibility_sitting:v.flexibility_sitting,flexibility_standing:v.flexibility_standing,
+    static_balance:v.static_balance,measured_at:v.measured_at,notes:JSON.stringify(notesPayload)
+  };
   try{
     const r=await fetch(AQBA_SUPABASE_URL+'/rest/v1/student_medical_records?on_conflict=student_id',{
       method:'POST',
@@ -889,47 +910,162 @@ async function saveMedicalForm(){
   }
 }
 function makeMedicalPDF(){
-  const s=getLoggedStudent();if(!s){alert('يرجى تسجيل الدخول أولاً.');return}
-  const esc=x=>String(x??'—').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
-  const val=(id,u)=>{const x=$(id)?.value;if(x===null||x===undefined||x==='')return '—';return esc(x)+(u?' '+u:'')};
-  const w=window.open('','_blank');
-  if(!w){alert('يرجى السماح بالنوافذ المنبثقة لهذا الموقع لإنشاء PDF.');return}
-  const health=[
-    ['الطول',val('medHeight','cm')],['الوزن',val('medWeight','kg')],
-    ['معدل ضربات القلب',val('medHeartRate','bpm')],['VMA — السرعة الهوائية القصوى',val('medVma','km/h')]
-  ];
-  const fitness=[
-    ['العدو السريع 30 متر',val('medRun30m','s')],
-    ['القفز الأفقي',val('medHorizontalJump','cm')],
-    ['القفز العمودي',val('medVerticalJump','cm')],
-    ['رمي الكرة الطبية',val('medMedicineBall','m')],
-    ['المرونة جلوسًا',val('medFlexSit','cm')],
-    ['المرونة وقوفًا',val('medFlexStand','cm')],
-    ['التوازن الثابت',val('medBalance','s')],
-    ['تاريخ القياس',val('medDate','')]
-  ];
-  const table=rows=>'<table>'+rows.map(r=>'<tr><th>'+esc(r[0])+'</th><td>'+r[1]+'</td></tr>').join('')+'</table>';
-  const teacherData=window.__teacherMedicalData||{teacher_note:'',ratings:{}};
-  const ratingLabels={heart_rate:'معدل ضربات القلب',vma:'VMA — السرعة الهوائية القصوى',run_30m:'العدو السريع 30 متر',horizontal_jump:'القفز الأفقي',vertical_jump:'القفز العمودي',medicine_ball_throw:'رمي الكرة الطبية',flexibility_sitting:'المرونة جلوسًا',flexibility_standing:'المرونة وقوفًا',static_balance:'التوازن الثابت'};
-  const ratingRows=Object.keys(ratingLabels).filter(k=>teacherData.ratings?.[k]).map(k=>[ratingLabels[k],esc(teacherData.ratings[k])]);
-  w.document.write(`<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>الاستمارة الطبية - ${esc(s.full_name)}</title>
+  try{
+    const s = typeof getLoggedStudent === 'function' ? getLoggedStudent() : null;
+    if(!s){ alert('يرجى تسجيل الدخول أولاً.'); return; }
+
+    const esc = x => String(x ?? '—').replace(/[&<>"']/g, c => ({
+      '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'
+    }[c]));
+
+    const value = (id, unit='') => {
+      const el = document.getElementById(id);
+      if(!el || el.value === '') return '—';
+      return esc(el.value) + (unit ? ' ' + unit : '');
+    };
+
+    const rows = data => data.map(r =>
+      '<tr><th>'+esc(r[0])+'</th><td style="text-align:center;vertical-align:middle">'+r[1]+'</td></tr>'
+    ).join('');
+
+    const personalHealth = [
+      ['الحالة الصحية', value('medIllness')],
+      ['تفاصيل الحالة / الأدوية عند الحاجة', value('medIllnessDetails')],
+      ['معلومات صحية إضافية / مشكلة صحية أو شخصية أخرى', value('medPersonalProblem')]
+    ];
+
+    const measures = [
+      ['الطول', value('medHeight','cm')],
+      ['الوزن', value('medWeight','kg')],
+      ['معدل ضربات القلب', value('medHeartRate','bpm')],
+      ['VMA — السرعة الهوائية القصوى', value('medVma','km/h')]
+    ];
+
+    const tests = [
+      ['العدو السريع 30 متر', value('medRun30m','s')],
+      ['القفز الأفقي', value('medHorizontalJump','cm')],
+      ['القفز العمودي', value('medVerticalJump','cm')],
+      ['رمي الكرة الطبية', value('medMedicineBall','m')],
+      ['المرونة جلوسًا', value('medFlexSit','cm')],
+      ['المرونة وقوفًا', value('medFlexStand','cm')],
+      ['التوازن الثابت', value('medBalance','s')],
+      ['تاريخ القياس', value('medDate')]
+    ];
+
+    const teacherData = window.__teacherMedicalData || {teacher_note:'', ratings:{}};
+    const labels = {
+      heart_rate:'معدل ضربات القلب', vma:'VMA — السرعة الهوائية القصوى',
+      run_30m:'العدو السريع 30 متر', horizontal_jump:'القفز الأفقي',
+      vertical_jump:'القفز العمودي', medicine_ball_throw:'رمي الكرة الطبية',
+      flexibility_sitting:'المرونة جلوسًا', flexibility_standing:'المرونة وقوفًا',
+      static_balance:'التوازن الثابت'
+    };
+    const ratings = Object.keys(labels)
+      .filter(k => teacherData.ratings && teacherData.ratings[k])
+      .map(k => [labels[k], esc(teacherData.ratings[k])]);
+
+    const note = teacherData.teacher_note
+      ? '<div class="note"><b>ملاحظات الأستاذ:</b> '+esc(teacherData.teacher_note)+'</div>'
+      : '';
+
+    // Use exactly the same personal photo already saved in the personal-information form.
+    // The photo is stored locally as `photo` in aqba_student_form_v1 and is therefore
+    // reused automatically for the medical PDF without asking for another upload.
+    let savedPersonalData = null;
+    try { savedPersonalData = JSON.parse(localStorage.getItem('aqba_student_form_v1') || 'null'); } catch(_) {}
+    const photoSrc = (savedPersonalData && savedPersonalData.photo) || s.photo || s.photo_url || '';
+    const photoHtml = photoSrc
+      ? '<div class="photo-print"><img src="'+esc(photoSrc)+'" alt="الصورة الشخصية"></div>'
+      : '<div class="photo-print empty">الصورة</div>';
+
+    const section = (title, data) =>
+      '<div class="title">'+title+'</div><table><tbody>'+rows(data)+'</tbody></table>';
+
+    const html = `<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>المعلومات الطبية والبدنية - ${esc(s.full_name || '')}</title>
 <style>
-@page{size:A4;margin:10mm}*{box-sizing:border-box;print-color-adjust:exact;-webkit-print-color-adjust:exact}
-body{font-family:Tahoma,Arial,sans-serif;color:#1f2d35;margin:0;font-size:12px}
-.head{text-align:center;border:2px solid #0b6846;border-radius:12px;padding:12px;background:linear-gradient(135deg,#edf9f3,#eef7ff);border-bottom:5px solid #e3b83f}
-.head div{font-weight:800;line-height:1.5}.head h1{color:#075c40;font-size:22px;margin:7px 0 2px}
-.info{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:12px 0}.info div{padding:8px;border:1px solid #d1dfdb;border-radius:8px;background:#fff}
-.title{margin:10px 0 5px;padding:7px 10px;color:#fff;font-weight:800;background:linear-gradient(90deg,#0b6846,#1687a4);border-right:5px solid #e3b83f;border-radius:7px}
-table{width:100%;border-collapse:collapse;margin-bottom:7px}th,td{border:1px solid #c8d8e3;padding:8px}th{width:45%;background:#f0f7f4;color:#075c40}td{font-weight:700;background:#fff}
-.note{margin-top:12px;padding:9px;border:1px solid #e8d49b;background:#fff9e8;border-radius:8px}
-.footer{margin-top:18px;text-align:center;color:#68757b;font-size:9px}
-</style></head><body>
-<div class="head"><div>المملكة المغربية</div><div>وزارة التربية الوطنية والتعليم الأولي والرياضة</div><div>الأكاديمية الجهوية للتربية والتكوين لجهة سوس ماسة</div><div>المديرية الإقليمية اشتوكة أيت باها</div><div>الثانوية التأهيلية عقبة بن نافع</div><h1>المعلومات الطبية والبدنية للتلميذ</h1><div>الموسم الدراسي 2026-2027</div></div>
-<div class="info"><div><b>رقم التلميذ:</b> ${esc(s.student_number)}</div><div><b>الاسم الكامل:</b> ${esc(s.full_name)}</div><div><b>القسم:</b> ${esc(s.class_name)}</div><div><b>المستوى:</b> ${esc(s.current_level)}</div></div>
-<div class="title">❤️ القياسات والمؤشرات الصحية</div>${table(health)}
-<div class="title">🏃 الاختبارات البدنية</div>${table(fitness)}
-<div class="footer">وثيقة مستخرجة من فضاء التلميذ</div></body></html>`);
-  w.document.close();setTimeout(()=>{w.focus();w.print()},700);
+@page{size:A4 portrait;margin:7mm}
+*{box-sizing:border-box;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+html,body{width:100%;height:auto}
+body{font-family:Arial,"Noto Sans Arabic",Tahoma,sans-serif;color:#25324a;margin:0;font-size:10px;line-height:1.2;background:#f7f8ff;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+.head{text-align:center;border:1.5px solid #4b3f8f;border-radius:8px;padding:5px;background:#f0efff;border-bottom:3px solid #8a7bd1}
+.head div{font-weight:800;line-height:1.25}.head h1{color:#40347d;font-size:17px;margin:3px 0 1px}
+.top-info{display:grid;grid-template-columns:78px 1fr;gap:6px;align-items:stretch;margin:6px 0}
+.photo-print{width:78px;height:82px;border:1px solid #6b5bb5;border-radius:6px;overflow:hidden;background:#f0efff;display:flex;align-items:center;justify-content:center;color:#6b5bb5;font-weight:700;font-size:8px}
+.photo-print img{width:100%;height:100%;object-fit:cover;display:block}
+.info{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin:0}
+.info div{padding:4px 6px;border:1px solid #d8d4ee;border-radius:5px;background:#fff;display:flex;align-items:center}
+.title{margin:5px 0 2px;padding:4px 7px;color:#fff;font-weight:800;background:#51459a;border-right:3px solid #b4a9e8;border-radius:5px;page-break-after:avoid}
+.health-title{background:#6b5bb5;border-right-color:#d2caf4;letter-spacing:.1px}
+table{width:100%;border-collapse:collapse;margin:0 0 4px;page-break-inside:avoid}
+tr{page-break-inside:avoid}
+th,td{border:1px solid #d3d0e5;padding:3px 6px;height:21px;vertical-align:middle}
+th{width:45%;background:#eeecfa;color:#40347d;text-align:right;font-weight:800}
+td{font-weight:700;background:#fff;text-align:center;vertical-align:middle;font-size:10px}
+.note{margin-top:5px;padding:5px;border:1px solid #d8cda3;background:#fffaf0;border-radius:5px;page-break-inside:avoid}
+.footer{margin-top:7px;text-align:center;color:#6b6f82;font-size:7px}
+@media print{
+  html,body{background:#fff!important}
+  body{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+  .head,.title,.health-title,th,td,.info div,.note{ -webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+}
+</style>
+</head>
+<body>
+<div class="head">
+<div>المملكة المغربية</div>
+<div>وزارة التربية الوطنية والتعليم الأولي والرياضة</div>
+<div>الأكاديمية الجهوية للتربية والتكوين لجهة سوس ماسة</div>
+<div>المديرية الإقليمية اشتوكة أيت باها</div>
+<div>الثانوية التأهيلية عقبة بن نافع</div>
+<h1>المعلومات الطبية والبدنية للتلميذ</h1>
+<div>الموسم الدراسي 2026-2027</div>
+</div>
+<div class="top-info">
+${photoHtml}
+<div class="info">
+<div><b>رقم التلميذ:</b>&nbsp; ${esc(s.student_number)}</div>
+<div><b>الاسم الكامل:</b>&nbsp; ${esc(s.full_name)}</div>
+<div><b>القسم:</b>&nbsp; ${esc(s.class_name)}</div>
+<div><b>المستوى:</b>&nbsp; ${esc(s.current_level)}</div>
+</div>
+</div>
+${section('🩺 المعطيات الصحية الخاصة بالتلميذ',personalHealth)}
+${section('❤️ القياسات والمؤشرات الصحية',measures)}
+${section('🏃 الاختبارات البدنية',tests)}
+${ratings.length ? section('⭐ تقييم الأستاذ',ratings) : ''}
+${note}
+<div class="footer">وثيقة مستخرجة من فضاء التلميذ</div>
+</body>
+</html>`;
+
+    // Open the print document synchronously. If popup is blocked, provide a
+    // clear instruction rather than silently failing.
+    let w = window.open('', '_blank');
+    if(!w){
+      alert('تم منع نافذة PDF من طرف المتصفح. اسمح بالنوافذ المنبثقة لهذا الموقع ثم أعد الضغط على زر تحميل PDF.');
+      return;
+    }
+
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
+
+    const printNow = () => {
+      try { w.focus(); w.print(); }
+      catch(e) { console.error(e); alert('تعذر فتح الطباعة: '+e.message); }
+    };
+
+    if(w.document.readyState === 'complete') setTimeout(printNow, 300);
+    else w.onload = () => setTimeout(printNow, 300);
+
+  }catch(e){
+    console.error('Medical PDF export error:', e);
+    alert('حدث خطأ أثناء تصدير الاستمارة الطبية PDF: '+(e.message || e));
+  }
 }
 
 (function(){
@@ -1024,6 +1160,13 @@ table{width:100%;border-collapse:collapse;margin-bottom:7px}th,td{border:1px sol
 
   <div id="medicalIdentity" class="medical-identity"></div>
 
+  <div class="medical-section-title">🩺 المعطيات الصحية الخاصة بالتلميذ</div>
+  <div class="medical-grid">
+    <div class="medical-field"><label>الحالة الصحية</label><select id="medIllness"><option value="">اختر</option><option>نعم</option><option>لا</option></select></div>
+    <div class="medical-field"><label>تفاصيل الحالة / الأدوية عند الحاجة</label><textarea id="medIllnessDetails"></textarea></div>
+    <div class="medical-field medical-wide"><label>معلومات صحية إضافية / مشكلة صحية أو شخصية أخرى</label><textarea id="medPersonalProblem"></textarea></div>
+  </div>
+
   <div class="medical-section-title">❤️ القياسات والمؤشرات الصحية</div>
   <div class="medical-grid">
     <div class="medical-field"><label>الطول</label><div class="unit-input"><input id="medHeight" type="number" step="0.1" min="0" readonly><span>cm</span></div></div>
@@ -1042,13 +1185,6 @@ table{width:100%;border-collapse:collapse;margin-bottom:7px}th,td{border:1px sol
     <div class="medical-field"><label>المرونة وقوفًا</label><div class="unit-input"><input id="medFlexStand" type="number" step="0.1"><span>cm</span></div></div>
     <div class="medical-field"><label>التوازن الثابت</label><div class="unit-input"><input id="medBalance" type="number" step="0.01" min="0"><span>s</span></div></div>
     <div class="medical-field"><label>تاريخ القياس</label><input id="medDate" type="date"></div>
-  </div>
-
-  <div class="medical-section-title">🏠 معلومات صحية إضافية</div>
-  <div class="medical-grid">
-    <div class="medical-field"><label>هل تعاني من مرض؟</label><select id="medIllness"><option value="">اختر</option><option>نعم</option><option>لا</option></select></div>
-    <div class="medical-field"><label>تفاصيل الحالة / الأدوية عند الحاجة</label><textarea id="medIllnessDetails"></textarea></div>
-    <div class="medical-field medical-wide"><label>مشكلة صحية أو شخصية أخرى</label><textarea id="medPersonalProblem"></textarea></div>
   </div>
 
   <div id="teacherEvaluationSection" class="teacher-evaluation" style="display:none">
