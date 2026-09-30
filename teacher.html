@@ -172,24 +172,56 @@ async function logout(){await sb.auth.signOut();location.reload()}
 function showApp(){$('loginView').classList.add('hidden');$('app').classList.remove('hidden');loadRows()}
 
 async function loadRows(){
-  $('tableMsg').className='muted'; $('tableMsg').textContent='جارٍ تحميل البيانات...';
+  $('tableMsg').className='muted';
+  $('tableMsg').textContent='جارٍ تحميل قائمة التلاميذ...';
   $('refreshBtn').disabled=true;
-  let all = [];
-  const chunk = 1000;
-  for (let from = 0; ; from += chunk) {
-    const {data,error}=await sb.from('students').select('*')
-      .order('created_at',{ascending:false}).range(from, from + chunk - 1);
-    if(error){
-      $('refreshBtn').disabled=false;
-      $('tableMsg').className='error';
-      $('tableMsg').textContent='خطأ في تحميل البيانات: '+error.message;
-      return;
+
+  // تحميل الأعمدة الضرورية للقائمة فقط، وتجنب raw_data/الصور الكبيرة.
+  // ثم تقسيم الطلبات إلى دفعات لتفادي statement timeout في Supabase.
+  const columns = [
+    'id','full_name','full_name_fr','student_number','student_no','registration_number',
+    'birth_date','birth_place','address','class_name','other_class','current_level',
+    'distance','travel_time','father_job','mother_job','height','weight',
+    'favorite_sport','represented','competition_name','competition_sport',
+    'competition_level','competition_year','health_status','personal_problem','created_at'
+  ].join(',');
+
+  try{
+    const batchSize=250;
+    let all=[];
+    let from=0;
+
+    while(true){
+      const to=from+batchSize-1;
+      const {data,error}=await sb.from('students')
+        .select(columns)
+        .order('created_at',{ascending:false})
+        .range(from,to);
+
+      if(error) throw error;
+      const part=data||[];
+      all=all.concat(part);
+
+      if(part.length<batchSize) break;
+      from += batchSize;
+
+      // حد أمان عملي بدل طلب آلاف الصفوف في استعلام واحد.
+      if(all.length>=10000) break;
     }
-    all.push(...(data || []));
-    if(!data || data.length < chunk) break;
+
+    rows=all;
+    page=1;
+    buildFilters();
+    updateStats();
+    render();
+
+    $('tableMsg').textContent=`تم تحميل ${rows.length} سجل.`;
+  }catch(error){
+    $('tableMsg').className='error';
+    $('tableMsg').textContent='خطأ في تحميل البيانات: '+(error?.message||String(error));
+  }finally{
+    $('refreshBtn').disabled=false;
   }
-  $('refreshBtn').disabled=false;
-  rows=all; page=1; buildFilters(); updateStats(); render();
 }
 function updateStats(){
   const classes=[...new Set(rows.map(r=>r.class_name||r.other_class).filter(Boolean))];
@@ -237,8 +269,20 @@ function val(label,value){return `<div class="detail"><strong>${esc(label)}</str
 function section(title,items){
   return `<div class="detail-section"><h3>${esc(title)}</h3><div class="detailgrid">${items.map(x=>val(x[0],x[1])).join('')}</div></div>`;
 }
-function openRow(id){
+async function openRow(id){
   current=rows.find(r=>String(r.id)===String(id)); if(!current)return;
+
+  // جلب التفاصيل الكاملة للتلميذ فقط عند طلب عرضها.
+  $('modal').classList.remove('hidden');
+  $('detail').innerHTML='<div class="report"><div class="center" style="padding:30px">جارٍ تحميل بيانات التلميذ...</div></div>';
+
+  const {data:full,error}=await sb.from('students').select('*').eq('id',id).maybeSingle();
+  if(error){
+    $('detail').innerHTML='<div class="report"><div class="error" style="padding:30px">تعذر تحميل تفاصيل التلميذ: '+esc(error.message)+'</div></div>';
+    return;
+  }
+  if(full) current=full;
+
   const d=current.raw_data||{};
   const photo=d.photo||current.photo||'';
   $('detail').innerHTML=`<div class="report">
@@ -327,13 +371,7 @@ function cleanExportValue(value){
 }
 
 function flattenStudent(r){
-  let d = {};
-  if (r && r.raw_data) {
-    if (typeof r.raw_data === 'object') d = r.raw_data;
-    else if (typeof r.raw_data === 'string') {
-      try { d = JSON.parse(r.raw_data) || {}; } catch(e) { d = {}; }
-    }
-  }
+  const d = (r && typeof r.raw_data === 'object' && r.raw_data) ? r.raw_data : {};
   const out = {};
 
   // Main database fields with Arabic Excel headings.
@@ -396,52 +434,41 @@ function exportExcel(){
   }
 
   if(typeof XLSX === 'undefined'){
-    alert('تعذر تحميل مكتبة Excel. تحقق من اتصال الإنترنت ثم أعد تحميل الصفحة.');
+    alert('مكتبة Excel لم يتم تحميلها. تحقق من الاتصال بالإنترنت ثم أعد المحاولة.');
     return;
   }
 
-  try{
-    const data = list.map(flattenStudent);
+  const data = list.map(flattenStudent);
+  const ws = XLSX.utils.json_to_sheet(data);
 
-    // Make sure every row has the same columns.
-    const headers = [...new Set(data.flatMap(r=>Object.keys(r)))];
-    const normalized = data.map(r=>{
-      const o={};
-      headers.forEach(h=>o[h]=cleanExportValue(r[h]));
-      return o;
-    });
+  // RTL + useful widths.
+  ws['!cols'] = Object.keys(data[0]).map((k,i)=>({
+    wch: Math.min(45, Math.max(14, String(k).length + 5))
+  }));
+  ws['!autofilter'] = {ref: ws['!ref']};
 
-    const ws = XLSX.utils.json_to_sheet(normalized, {header:headers});
-    ws['!cols'] = headers.map(k=>({
-      wch: Math.min(45, Math.max(14, String(k).length + 5))
-    }));
-    if(ws['!ref']) ws['!autofilter']={ref:ws['!ref']};
+  const stats = [
+    ['تقرير بوابة الأستاذ — الثانوية التأهيلية عقبة بن نافع', ''],
+    ['الموسم الدراسي', '2026-2027'],
+    ['عدد السجلات المصدرة', list.length],
+    ['تاريخ التصدير', new Date().toLocaleString('fr-FR')],
+    ['التصفية', $('search').value.trim() || 'بدون بحث'],
+    ['القسم', $('classFilter').value || 'كل الأقسام'],
+    ['الرياضة', $('sportFilter').value || 'كل الرياضات'],
+    ['التمثيل', $('representedFilter').value==='yes' ? 'مثل المؤسسة' :
+                 $('representedFilter').value==='no' ? 'لم يمثل' : 'الكل']
+  ];
+  const wsStats = XLSX.utils.aoa_to_sheet(stats);
+  wsStats['!cols']=[{wch:28},{wch:55}];
 
-    const stats = [
-      ['تقرير بوابة الأستاذ — الثانوية التأهيلية عقبة بن نافع', ''],
-      ['الموسم الدراسي', '2026-2027'],
-      ['عدد السجلات المصدرة', list.length],
-      ['تاريخ التصدير', new Date().toLocaleString('fr-FR')],
-      ['التصفية', $('search').value.trim() || 'بدون بحث'],
-      ['القسم', $('classFilter').value || 'كل الأقسام'],
-      ['الرياضة', $('sportFilter').value || 'كل الرياضات'],
-      ['التمثيل', $('representedFilter').value==='yes' ? 'مثل المؤسسة' :
-                   $('representedFilter').value==='no' ? 'لم يمثل' : 'الكل']
-    ];
-    const wsStats = XLSX.utils.aoa_to_sheet(stats);
-    wsStats['!cols']=[{wch:30},{wch:55}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'التلاميذ');
+  XLSX.utils.book_append_sheet(wb, wsStats, 'الإحصائيات');
 
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'التلاميذ');
-    XLSX.utils.book_append_sheet(wb, wsStats, 'الإحصائيات');
-
-    const stamp = new Date().toISOString().slice(0,10);
-    XLSX.writeFile(wb, `تلاميذ_عقبة_بن_نافع_${stamp}.xlsx`);
-  }catch(err){
-    console.error('Excel export error:',err);
-    alert('حدث خطأ أثناء إنشاء ملف Excel: '+(err.message||err));
-  }
+  const stamp = new Date().toISOString().slice(0,10);
+  XLSX.writeFile(wb, `تلاميذ_عقبة_بن_نافع_${stamp}.xlsx`);
 }
+
 function csv(){
   const list=filtered();
   if(!list.length){ alert('لا توجد معطيات للتصدير.'); return; }
